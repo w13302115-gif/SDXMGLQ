@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f0f14">
+<meta name="apple-mobile-web-app-title" content="深东项目管理器">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>深东项目管理器</title>
+<style>
+:root{--bg:#0f0f14;--card:#1a1a24;--border:#2a2a3a;--text:#e0e0e0;--muted:#777;--accent:#6c5ce7;--green:#34d399;--red:#f87171;--yellow:#fbbf24;--orange:#fb923c;--blue:#60a5fa;--r:14px;--s:env(safe-area-inset-bottom,0px)}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','HarmonyOS Sans',sans-serif;background:var(--bg);color:var(--text);user-select:none;-webkit-user-select:none}
+::-webkit-scrollbar{width:0}
+
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100%;padding:20px}
+.login-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:32px 28px;width:100%;max-width:360px;text-align:center}
+.login-card .logo-sm{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#8b9cff,#a78bfa);display:inline-flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:10px}
+.login-card h1{font-size:1.2rem;font-weight:700;margin-bottom:4px;background:linear-gradient(135deg,#8b9cff,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.login-card .sub{font-size:.68rem;color:var(--muted);margin-bottom:22px}
+.login-card .fld{margin-bottom:12px;text-align:left}
+.login-card .fld label{display:block;font-size:.62rem;color:var(--muted);margin-bottom:3px}
+.login-card .fld select,.login-card .fld input{width:100%;padding:13px;background:#12121a;border:1px solid #333;border-radius:10px;color:var(--text);font-size:.9rem;font-family:inherit;outline:none;-webkit-appearance:none}
+.login-card .fld select:focus,.login-card .fld input:focus{border-color:var(--accent)}
+.login-card .err{color:var(--red);font-size:.68rem;min-height:22px;margin-bottom:6px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:10px 18px;border:1px solid #444;background:#1e1e2a;color:#ccc;border-radius:10px;cursor:pointer;font-size:.78rem;font-family:inherit;transition:all .15s;white-space:nowrap;min-height:44px;-webkit-tap-highlight-color:transparent}
+.btn:active{opacity:.7;transform:scale(.97)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn-danger{border-color:#5a3030;color:var(--red)}.btn-orange{border-color:#5a4020;color:var(--orange);background:#2a2010}
+.btn-green{border-color:#205030;color:var(--green);background:#102018}.btn-blue{border-color:#204060;color:var(--blue);background:#102030}
+.btn-sm{padding:7px 14px;font-size:.7rem}.btn-xs{padding:5px 10px;font-size:.64rem;min-height:36px}
+
+.app-wrap{display:none;flex-direction:column;height:100%}
+.top-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;gap:8px}
+.top-bar .tb-logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#8b9cff,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:700;color:#fff;flex-shrink:0}
+.top-bar .tb-title{font-size:.82rem;font-weight:700}.top-bar .tb-user{font-size:.62rem;color:var(--muted)}
+.role-badge{font-size:.55rem;padding:2px 7px;border-radius:3px;font-weight:600}
+.role-badge.manager{background:#2a1040;color:#a78bfa}.role-badge.member{background:#102a20;color:var(--green)}
+
+.content-area{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:10px 12px 80px}
+
+.stats-bar{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.stat-card{padding:10px 8px;background:var(--card);border-radius:10px;border:1px solid var(--border);text-align:center}
+.stat-card .num{font-size:1.3rem;font-weight:700;color:#8b9cff;line-height:1.1}
+.stat-card .label{font-size:.55rem;color:var(--muted);margin-top:3px}
+.stat-card.done .num{color:var(--green)}.stat-card.pomo .num{color:var(--orange)}
+
+.task-list{display:flex;flex-direction:column;gap:8px}
+.task-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:all .2s}
+.task-card:active{opacity:.85}
+.task-card.done{opacity:.4;border-color:#222}
+.task-card.done .task-title-text{text-decoration:line-through;color:#555}
+
+.tc-header{display:flex;align-items:center;gap:10px;padding:14px;cursor:pointer;min-height:52px}
+.tc-header:active{background:#1e1e28}
+.cb-wrap{flex-shrink:0;width:26px;height:26px;position:relative}
+.cb-wrap input{position:absolute;inset:0;opacity:0;z-index:2;width:100%;height:100%}
+.cb-box{width:26px;height:26px;border:2px solid #555;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:1rem;color:transparent;transition:all .18s}
+.cb-wrap input:checked+.cb-box{background:var(--green);border-color:var(--green);color:#0f0f14}
+
+.priority-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.priority-dot.high{background:var(--red)}.priority-dot.medium{background:var(--yellow)}.priority-dot.low{background:var(--green)}
+
+.task-info{flex:1;min-width:0}
+.task-title-text{font-size:.82rem;font-weight:600;color:#e8e8e8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.task-meta{display:flex;gap:8px;margin-top:2px;font-size:.6rem;color:var(--muted);flex-wrap:wrap;align-items:center}
+
+.tag{display:inline-flex;align-items:center;gap:2px;padding:2px 6px;border-radius:4px;font-size:.55rem;font-weight:600;white-space:nowrap}
+.tag-daily{background:#203040;color:var(--blue)}.tag-assigned{background:#302010;color:var(--orange)}.tag-pending{background:#2a3020;color:var(--yellow)}.tag-pomo{background:#1a1008;color:var(--orange)}
+
+.tc-actions{display:flex;gap:4px;flex-shrink:0}
+.expand-arrow{width:20px;text-align:center;color:#555;font-size:.7rem;transition:transform .2s;flex-shrink:0}
+.expand-arrow.open{transform:rotate(90deg)}
+
+.sub-panel{border-top:1px solid #252530;background:#13131c;max-height:0;overflow:hidden;transition:max-height .35s}
+.sub-panel.open{max-height:4000px}
+
+.sub-row{display:flex;align-items:center;gap:6px;padding:8px 12px 8px 38px;border-bottom:1px solid #1c1c28;flex-wrap:wrap;min-height:40px}
+.sub-row:active{background:#181824}
+.sub-row.done{opacity:.35}.sub-row.done .sub-name{text-decoration:line-through;color:#555}
+.sub-row.my-task{background:#081408;border-left:3px solid var(--green)}
+.sub-row.others-task{opacity:.45}
+
+.sub-left{display:flex;align-items:center;gap:7px;flex:1;min-width:0}
+.sub-name{font-size:.73rem;color:#ccc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sub-meta{display:flex;align-items:center;gap:5px;font-size:.56rem;color:#666;flex-wrap:wrap}
+.sub-right{display:flex;align-items:center;gap:3px;flex-shrink:0;flex-wrap:wrap}
+
+.pomo-timer{display:inline-flex;align-items:center;gap:3px;font-size:.64rem;font-weight:700;color:var(--orange);padding:3px 8px;background:#1a1008;border-radius:5px;border:1px solid #3a2810}
+.pomo-timer.running{animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+.add-sub-row{display:flex;align-items:center;gap:5px;padding:8px 12px 8px 38px;flex-wrap:wrap}
+.add-sub-row input,.add-sub-row select{padding:7px 10px;background:#1a1a24;border:1px solid #333;border-radius:7px;color:#ccc;font-size:.7rem;font-family:inherit;outline:none;-webkit-appearance:none;min-height:36px}
+.add-sub-row .sn-inp{flex:1;min-width:80px}.add-sub-row .se-inp{width:55px}.add-sub-row .sc-sel{width:85px;display:none}
+
+.chk-mini{display:inline-flex;align-items:center;gap:2px;font-size:.58rem;color:#999;cursor:pointer;white-space:nowrap}
+.chk-mini input{width:auto;margin:0;accent-color:var(--accent);transform:scale(1.1)}
+
+.sub-edit-row{display:flex;align-items:center;gap:5px;padding:8px 12px 8px 38px;border-bottom:1px solid #1c1c28;background:#1a1a28;flex-wrap:wrap}
+.sub-edit-row input,.sub-edit-row select{padding:7px 10px;background:#12121a;border:1px solid #444;border-radius:6px;color:#ccc;font-size:.7rem;font-family:inherit;outline:none;-webkit-appearance:none;min-height:36px}
+.sub-edit-row .se-name{width:110px}.sub-edit-row .se-est{width:55px}.sub-edit-row .se-colleague{width:85px;display:none}
+
+.empty-state{text-align:center;padding:60px 20px;color:#555;font-size:.78rem;line-height:1.8}
+.empty-state .big-icon{font-size:3rem;margin-bottom:12px;opacity:.5}
+
+.focus-view{display:none}.settings-view{display:none;padding:0 4px}
+.focus-list{display:flex;flex-direction:column;gap:6px}
+.focus-card{background:var(--card);border:1px solid var(--border);border-radius:12px;display:flex;align-items:center;gap:10px;padding:12px 14px;min-height:52px}
+.focus-card:active{background:#1e1e2a}
+.focus-card .fn{flex:1;min-width:0}
+.focus-card .fn .focus-name{font-size:.78rem;color:#e0e0e0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.focus-card .fn .focus-meta{font-size:.55rem;color:#666;margin-top:2px}
+.focus-card .fa{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.focus-empty{text-align:center;padding:80px 20px;color:#444;font-size:.78rem;line-height:2}
+.focus-empty .big-icon{font-size:3rem;margin-bottom:12px}
+
+.settings-view .set-sec{margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid #252530}
+.settings-view .set-sec:last-child{border-bottom:none}
+.settings-view .set-title{font-size:.82rem;font-weight:600;margin-bottom:8px}
+.settings-view .set-label{font-size:.64rem;color:var(--muted);margin-bottom:4px}
+.settings-view .set-input{width:100%;padding:11px;background:#12121a;border:1px solid #333;border-radius:8px;color:var(--text);font-size:.82rem;font-family:inherit;outline:none;margin-bottom:8px}
+.settings-view .set-hint{font-size:.56rem;color:#666;margin-bottom:6px;line-height:1.5}
+.settings-view .set-row{display:flex;gap:8px}
+.settings-view .set-row .set-input{flex:1}
+
+.pomo-overlay{position:fixed;inset:0;background:rgba(10,10,18,.97);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:990}
+.pomo-overlay.show{display:flex}
+.pomo-overlay .big-time{font-size:5rem;font-weight:300;color:var(--orange)}
+.pomo-overlay .big-time.done{color:var(--green)}
+.pomo-overlay .big-task{font-size:.78rem;color:var(--muted);margin-top:10px;text-align:center;padding:0 20px}
+.pomo-overlay .big-play{width:100px;height:100px;border-radius:50%;border:3px solid var(--orange);background:rgba(251,146,60,.15);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:2.5rem;color:var(--orange);margin-top:20px}
+.pomo-overlay .big-close{position:fixed;bottom:40px;width:42px;height:42px;border:1px solid #444;border-radius:50%;background:#1a1a24;color:#888;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;left:50%;margin-left:-21px}
+
+.imp-dialog{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:none;align-items:center;justify-content:center}
+.imp-dialog.show{display:flex}
+.imp-dialog .imp-card{background:var(--card);border:1px solid #444;border-radius:16px;padding:24px;width:90%;max-width:360px;text-align:center}
+.imp-dialog .imp-info{font-size:.7rem;color:var(--muted);margin-bottom:16px}
+.imp-dialog .imp-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+.bottom-nav{display:flex;background:var(--card);border-top:1px solid var(--border);flex-shrink:0;padding-bottom:var(--s);position:fixed;bottom:0;left:0;right:0;z-index:100}
+.bottom-nav .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 0 2px;gap:2px;border:none;background:transparent;color:#666;font-size:.58rem;font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;min-height:56px}
+.bottom-nav .nav-item.active{color:var(--accent)}
+.bottom-nav .nav-item .nav-icon{font-size:1.25rem;line-height:1}
+.bottom-nav .nav-item:active{opacity:.7}
+
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;z-index:999}
+.modal-bg.show{display:flex}
+.modal-sheet{background:var(--card);border-radius:18px 18px 0 0;padding:20px 18px;width:100%;max-height:85vh;overflow-y:auto;animation:slideUp .25s}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-sheet h3{font-size:.95rem;margin-bottom:12px}
+.modal-sheet .fld{margin-bottom:10px}
+.modal-sheet .fld label{display:block;font-size:.62rem;color:var(--muted);margin-bottom:3px}
+.modal-sheet .fld input,.modal-sheet .fld select{width:100%;padding:11px;background:#12121a;border:1px solid #333;border-radius:8px;color:var(--text);font-size:.82rem;font-family:inherit;outline:none;-webkit-appearance:none}
+
+.team-row{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#14141e;border-radius:8px;margin-bottom:6px;border:1px solid #252530}
+.team-row .name{flex:1;font-size:.8rem}
+.team-add-row{display:flex;gap:8px;margin-top:10px}
+.team-add-row input{flex:1;padding:10px;background:#12121a;border:1px solid #333;border-radius:6px;color:var(--text);font-size:.75rem;font-family:inherit;outline:none}
+
+@media(min-width:768px){.app-wrap{max-width:800px;margin:0 auto}.pomo-overlay .big-time{font-size:7rem}}
+</style>
+</head>
+<body>
+
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <div class="logo-sm">东</div>
+    <h1>深东项目管理器</h1>
+    <div class="sub">请登录</div>
+    <div class="fld"><label>选择身份</label><select id="loginName"></select></div>
+    <div class="fld"><label>密码</label><input type="password" id="loginPwd" placeholder="输入密码..." onkeydown="if(event.key==='Enter')login()"></div>
+    <div class="err" id="loginErr"></div>
+    <button class="btn btn-primary" onclick="login()" style="width:100%;padding:14px;font-size:.95rem">登 录</button>
+  </div>
+</div>
+
+<div class="app-wrap" id="appWrap">
+  <div class="top-bar">
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="tb-logo">东</div>
+      <div>
+        <div class="tb-title">深东项目管理器</div>
+        <div class="tb-user"><span id="headerUser"></span> <span class="role-badge" id="roleBadge"></span> · <span id="td"></span></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-xs" id="btnTeam" onclick="openTeamMgmt()" style="display:none">👥</button>
+      <button class="btn btn-xs" onclick="logout()">🚪</button>
+    </div>
+  </div>
+
+  <div class="content-area" id="contentArea">
+    <div id="view1">
+      <div class="stats-bar">
+        <div class="stat-card"><div class="num" id="tc">0</div><div class="label">总项目</div></div>
+        <div class="stat-card"><div class="num" id="mc">0</div><div class="label">我的待办</div></div>
+        <div class="stat-card done"><div class="num" id="dc">0</div><div class="label">已完成</div></div>
+        <div class="stat-card pomo"><div class="num" id="pc">0</div><div class="label">番茄</div></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="add()">+ 新建</button>
+        <button class="btn btn-sm" onclick="exp()">导出</button>
+        <button class="btn btn-sm" onclick="imp()">导入</button>
+        <button class="btn btn-danger btn-sm" onclick="clr()">清理</button>
+      </div>
+      <div class="task-list" id="ts"></div>
+      <div class="empty-state" id="eh"><div class="big-icon">📋</div>还没有项目<br>点击「+ 新建」开始吧</div>
+    </div>
+
+    <div class="focus-view" id="view2">
+      <div class="stats-bar">
+        <div class="stat-card"><div class="num" id="fc">0</div><div class="label">待办</div></div>
+        <div class="stat-card done"><div class="num" id="fdc">0</div><div class="label">完成</div></div>
+        <div class="stat-card pomo"><div class="num" id="fpc">0</div><div class="label">番茄</div></div>
+        <div class="stat-card"><div class="num" id="frest">0</div><div class="label">剩余</div></div>
+      </div>
+      <div class="focus-list" id="focusList"></div>
+      <div class="focus-empty" id="focusEmpty"><div class="big-icon">☕</div>暂无待办<br>切换到项目总览吧</div>
+    </div>
+
+    <div class="settings-view" id="view3">
+      <div class="set-sec">
+        <div class="set-title">📁 导出设置</div>
+        <div class="set-label">导出文件名</div>
+        <input class="set-input" id="stExpName" placeholder="深东项目备份">
+        <div class="set-label">保存位置</div>
+        <div class="set-row">
+          <input class="set-input" id="stExpPath" placeholder="浏览器默认下载" readonly style="width:auto;flex:1">
+          <button class="btn btn-primary btn-sm" onclick="pickExportFolder()">选文件夹</button>
+        </div>
+      </div>
+      <div class="set-sec">
+        <div class="set-title">🔒 修改密码</div>
+        <input class="set-input" type="password" id="stOld" placeholder="旧密码">
+        <input class="set-input" type="password" id="stNew1" placeholder="新密码">
+        <input class="set-input" type="password" id="stNew2" placeholder="确认新密码">
+        <div style="color:var(--red);font-size:.68rem;min-height:18px" id="stPwdErr"></div>
+        <button class="btn btn-primary btn-sm" onclick="changePwdFromSettings()">修改密码</button>
+      </div>
+      <div class="set-sec">
+        <div class="set-title">⏱ 番茄钟</div>
+        <div class="set-row">
+          <input class="set-input" type="number" id="stPomoMins" min="1" max="120" placeholder="分钟" style="flex:2">
+          <button class="btn btn-primary btn-sm" onclick="savePomoSettings()" style="flex:1">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-item active" onclick="switchTab(1)" id="nav1"><span class="nav-icon">📋</span>总览</button>
+    <button class="nav-item" onclick="switchTab(2)" id="nav2"><span class="nav-icon">🎯</span>专注</button>
+    <button class="nav-item" onclick="switchTab(3)" id="nav3"><span class="nav-icon">⚙</span>设置</button>
+  </div>
+</div>
+
+<div class="pomo-overlay" id="pomoOverlay">
+  <div class="big-time" id="pomoBigTime">25:00</div>
+  <div class="big-task" id="pomoBigTask"></div>
+  <div class="big-play" id="pomoBigPlay" style="display:none" onclick="restartPomoFromOverlay()">▶</div>
+  <div class="big-close" onclick="closePomoOverlay()">✕</div>
+</div>
+
+<div class="imp-dialog" id="impDlg">
+  <div class="imp-card">
+    <h3 id="impTitle">导入数据</h3>
+    <div class="imp-info" id="impInfo"></div>
+    <div class="imp-btns" id="impBtns"></div>
+    <button class="btn btn-sm" onclick="cancelImp()" style="margin-top:12px">取消</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="md">
+  <div class="modal-sheet">
+    <h3 id="mt">新建项目</h3>
+    <div class="fld"><label>项目名称</label><input id="en" placeholder="输入项目名称..."></div>
+    <div style="display:flex;gap:8px">
+      <div class="fld" style="flex:1"><label>预估时间</label><input id="ee" placeholder="例：2h"></div>
+      <div class="fld" style="flex:1"><label>优先级</label><select id="ep"><option value="medium">中</option><option value="high">高</option><option value="low">低</option></select></div>
+    </div>
+    <div class="fld"><label>截止日期</label><input id="ed" type="date"></div>
+    <div class="fld"><label class="chk-mini" style="font-size:.72rem;color:#ccc;gap:6px"><input type="checkbox" id="eDly"> 每日打卡</label></div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn" onclick="cls()" style="flex:1">取消</button>
+      <button class="btn btn-primary" id="sb" onclick="sv()" style="flex:1">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="tm">
+  <div class="modal-sheet">
+    <h3>👥 团队</h3>
+    <div style="margin-bottom:6px;font-size:.68rem;color:var(--muted)">管理员：<b style="color:#a78bfa" id="tmMgName"></b></div>
+    <div style="font-size:.6rem;color:var(--muted);margin-bottom:6px">团队成员：</div>
+    <div id="tmList"></div>
+    <div class="team-add-row">
+      <input id="tmNewName" placeholder="姓名"><input id="tmNewPwd" placeholder="密码" type="password" style="width:90px">
+      <button class="btn btn-primary btn-sm" onclick="addMember()">添加</button>
+    </div>
+    <div style="margin-top:10px;font-size:.6rem;color:var(--muted)">管理员密码：</div>
+    <div class="team-add-row">
+      <input id="tmMgPwd" placeholder="新密码" type="password">
+      <button class="btn btn-sm" onclick="changeMgPwd()">更新</button>
+    </div>
+    <button class="btn" onclick="closeTeamMgmt()" style="width:100%;margin-top:12px">关闭</button>
+  </div>
+</div>
+
+<script>
+let tsks=[],cfg=null,me='',ei=-1,timerId=null,curTab=1,pomoTask=null,impQueue=null,expFolderHandle=null;
+const KEY_T='xl_tm_tasks',KEY_C='xl_tm_cfg',KEY_I='xl_pwa_id';
+const DEF_HASH='8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92';
+
+function defaultCfg(){return{manager:'东哥哥',managerPwd:DEF_HASH,pomoMins:25,expName:'深东项目备份',expPath:'',members:[{name:'小北哥',role:'member',pwd:DEF_HASH},{name:'老蔡',role:'member',pwd:DEF_HASH},{name:'孙博文',role:'member',pwd:DEF_HASH}]}}
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+function pomoSec(){return(cfg.pomoMins||25)*60}
+function pomoLabel(){let m=cfg.pomoMins||25;return m+'min'}
+async function hashPwd(pwd){let d=new TextEncoder().encode(pwd);let h=await crypto.subtle.digest('SHA-256',d);return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('')}
+
+function ldCfg(){try{let r=localStorage.getItem(KEY_C);cfg=r?JSON.parse(r):null}catch(e){cfg=null};if(!cfg||!cfg.manager)cfg=defaultCfg();if(!cfg.pomoMins)cfg.pomoMins=25;if(!cfg.expName)cfg.expName='深东项目备份';if(!cfg.expPath)cfg.expPath=''}
+function svCfg(){localStorage.setItem(KEY_C,JSON.stringify(cfg))}
+function allPeople(){return[cfg.manager,...cfg.members.map(m=>m.name)]}
+function isManager(){return me===cfg.manager}
+function getMembers(){return cfg.members.map(m=>m.name)}
+function getPwdFor(name){if(name===cfg.manager)return cfg.managerPwd;let m=cfg.members.find(m=>m.name===name);return m?m.pwd:null}
+function setPwdFor(name,hash){if(name===cfg.manager){cfg.managerPwd=hash;return}let m=cfg.members.find(m=>m.name===name);if(m)m.pwd=hash}
+function popLoginNames(){document.getElementById('loginName').innerHTML=allPeople().map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join('')}
+
+async function login(){
+  document.getElementById('loginErr').textContent='';
+  let name=document.getElementById('loginName').value,pwd=document.getElementById('loginPwd').value;
+  if(!pwd){document.getElementById('loginErr').textContent='请输入密码';return}
+  if((await hashPwd(pwd))!==getPwdFor(name)){document.getElementById('loginErr').textContent='密码错误';return}
+  document.getElementById('loginPwd').value='';me=name;localStorage.setItem(KEY_I,me);showApp()
+}
+function logout(){
+  me='';localStorage.removeItem(KEY_I);
+  document.getElementById('appWrap').style.display='none';document.getElementById('loginWrap').style.display='flex';
+  document.getElementById('loginErr').textContent='';document.getElementById('loginPwd').value='';
+  expFolderHandle=null;if(timerId){clearInterval(timerId);timerId=null};closePomoOverlay(false);popLoginNames()
+}
+function showApp(){
+  document.getElementById('loginWrap').style.display='none';document.getElementById('appWrap').style.display='flex';
+  updateHeaders();switchTab(curTab);ldTasks();rdr();renderFocus();refreshSettings()
+}
+function updateHeaders(){
+  document.getElementById('headerUser').textContent=me;
+  let rb=document.getElementById('roleBadge');rb.textContent=isManager()?'管理员':'伙伴';rb.className='role-badge '+(isManager()?'manager':'member');
+  document.getElementById('btnTeam').style.display=isManager()?'inline-flex':'none';document.getElementById('td').textContent=tdy()
+}
+function switchTab(v){
+  curTab=v;
+  document.getElementById('view1').style.display=v===1?'block':'none';
+  document.getElementById('view2').style.display=v===2?'block':'none';
+  document.getElementById('view3').style.display=v===3?'block':'none';
+  [1,2,3].forEach(i=>document.getElementById('nav'+i).classList.toggle('active',i===v));
+  if(v===2)renderFocus();if(v===3)refreshSettings()
+}
+function ldTasks(){
+  try{let r=localStorage.getItem(KEY_T);if(r)tsks=JSON.parse(r)}catch(e){tsks=[]};if(!Array.isArray(tsks))tsks=[];
+  let today=ymd();tsks.forEach(t=>{if(!t.id)t.id=genId();if(t.dl&&t.lcd!==today&&t.done){t.done=false;t.at='';if(t.sb)t.sb.forEach(s=>{s.done=false;s.at=''})};if(t.sb)t.sb.forEach(s=>{if(!s.id)s.id=genId();if(s.prun&&!s.done)s.prun=false})});svs()
+}
+function svs(){localStorage.setItem(KEY_T,JSON.stringify(tsks))}
+function ymd(){let d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0')+'-'+d.getDate().toString().padStart(2,'0')}
+function tdy(){let d=new Date();return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()}
+function nw(){let d=new Date(),p=n=>('0'+n).slice(-2);return(d.getMonth()+1)+'/'+d.getDate()+' '+p(d.getHours())+':'+p(d.getMinutes())}
+function esc(s){if(!s)return'';let d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+function rdr(){
+  let c=document.getElementById('ts'),h=document.getElementById('eh');
+  if(!tsks.length){c.innerHTML='';h.style.display='block'}else{h.style.display='none';c.innerHTML=tsks.map((t,i)=>cd(t,i)).join('')};stt()
+}
+function cd(t,i){
+  let cc=t.done?' done':'',oc=t.exp?' open':'',sh='';if(t.sb&&t.sb.length)sh=t.sb.map((s,si)=>subHtml(s,i,si)).join('');
+  let at2=t.at?'<span>实际:'+esc(t.at)+'</span>':'',ds2=t.de?'<span>截止:'+esc(t.de)+'</span>':'';
+  let sd=0,sn=0;if(t.sb){sn=t.sb.length;sd=t.sb.filter(s=>s.done).length}
+  let mySubs=0;if(t.sb)mySubs=t.sb.filter(s=>s.assignedTo===me&&!s.done).length;
+  let capt='<span>'+sd+'/'+sn+'项</span>';if(mySubs>0)capt='<span>'+sd+'/'+sn+'项</span><span style="color:var(--green)">我:'+mySubs+'</span>';
+  let dt=t.dl?'<span class="tag tag-daily">每日</span>':'';
+  return'<div class="task-card'+cc+'"><div class="tc-header" onclick="te('+i+')"><span class="cb-wrap" onclick="event.stopPropagation()"><input type="checkbox" '+(t.done?'checked':'')+' onchange="tt('+i+')"><span class="cb-box">'+String.fromCharCode(10003)+'</span></span><span class="priority-dot '+(t.pr||'medium')+'"></span><span class="task-info"><div class="task-title-text">'+esc(t.nm||'未命名')+'</div><div class="task-meta"><span>'+esc(t.et||'-')+'</span>'+at2+ds2+capt+dt+'</div></span><span class="tc-actions"><button class="btn btn-xs" onclick="event.stopPropagation();edt('+i+')">编辑</button><button class="btn btn-xs btn-danger" onclick="event.stopPropagation();dt('+i+')">'+String.fromCharCode(10005)+'</button></span><span class="expand-arrow'+oc+'">'+String.fromCharCode(9654)+'</span></div><div class="sub-panel'+oc+'">'+sh+addSubRowHtml(i)+'</div></div>'
+}
+function addSubRowHtml(i){
+  let dd='';if(isManager())dd=allPeople().map(n=>'<option value="'+esc(n)+'"'+(n===me?' selected':'')+'>'+esc(n)+(n===me?' (自己)':'')+'</option>').join('');
+  return'<div class="add-sub-row"><input class="sn-inp" id="sn_'+i+'" placeholder="+ 待办" onkeydown="if(event.key===\'Enter\')as('+i+')"><input class="se-inp" id="se_'+i+'" placeholder="h"><label class="chk-mini"><input type="checkbox" id="sdel_'+i+'" onchange="tgCD('+i+')">协作</label>'+(isManager()?'<select class="sc-sel" id="scsel_'+i+'">'+dd+'</select>':'<span style="font-size:.6rem;color:var(--muted)">自己</span>')+'<label class="chk-mini"><input type="checkbox" id="spom_'+i+'">'+String.fromCodePoint(127813)+'</label><button class="btn btn-xs btn-primary" onclick="as('+i+')">+</button></div>'
+}
+function tgCD(i){let e=document.getElementById('scsel_'+i);if(e)e.style.display=document.getElementById('sdel_'+i).checked?'inline-block':'none'}
+
+function subHtml(s,ti,si){
+  if(s._ed)return subEditHtml(s,ti,si);
+  let isM=s.assignedTo===me,isO=s.assignedTo&&s.assignedTo!==me,rc='sub-row';
+  if(s.done)rc+=' done';else if(isM)rc+=' my-task';else if(isO)rc+=' others-task';
+  if(s.done){
+    let ex='';if(s.pc)ex='<span>'+s.pc+String.fromCodePoint(127813)+'</span>';
+    return'<div class="'+rc+'"><span class="sub-left"><span class="cb-wrap" onclick="event.stopPropagation()"><input type="checkbox" checked onchange="undoSub('+ti+','+si+')"><span class="cb-box">'+String.fromCharCode(10003)+'</span></span><span class="sub-name">'+esc(s.nm)+'</span><span class="sub-meta"><span>'+esc(s.et||'-')+'</span><span>'+esc(s.at||'')+'</span>'+ex+'</span></span><span class="sub-right">'+(isM||isManager()?'<button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button><button class="btn btn-xs" onclick="event.stopPropagation();ds('+ti+','+si+')">'+String.fromCharCode(10005)+'</button>':'')+'</span></div>'
+  }
+  let l='',r='<span class="sub-right">';
+  if(s.assignedTo&&s.status==='submitted'){
+    l='<span class="sub-left"><span class="cb-wrap"><span class="cb-box" style="opacity:.35">'+String.fromCharCode(10003)+'</span></span><span class="sub-name">'+esc(s.nm)+'</span><span class="sub-meta"><span>'+esc(s.et||'-')+'</span><span class="tag tag-pending">'+esc(s.assignedTo)+' 已提交</span></span></span>';
+    if(isManager()){r+='<button class="btn btn-xs btn-green" onclick="event.stopPropagation();approve('+ti+','+si+')">确认完成</button><button class="btn btn-xs" onclick="event.stopPropagation();reject('+ti+','+si+')">发回</button><button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button><button class="btn btn-xs" onclick="event.stopPropagation();ds('+ti+','+si+')">'+String.fromCharCode(10005)+'</button>'}
+    else if(isM){r+='<button class="btn btn-xs btn-blue" onclick="event.stopPropagation();withdrawSubmission('+ti+','+si+')">撤回</button><button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button><button class="btn btn-xs" onclick="event.stopPropagation();ds('+ti+','+si+')">'+String.fromCharCode(10005)+'</button>'}
+  }else if(s.assignedTo&&s.status==='assigned'){
+    l='<span class="sub-left"><span class="cb-wrap"><span class="cb-box" style="opacity:.3">-</span></span><span class="sub-name">'+esc(s.nm)+'</span><span class="sub-meta"><span>'+esc(s.et||'-')+'</span><span class="tag tag-assigned">'+esc(s.assignedTo)+'</span></span></span>';
+    if(isM){if(s.pom){if(s.prun){let rem=calcRem(s);r+='<span class="pomo-timer running" id="stpt_'+ti+'_'+si+'">'+fmtTime(rem)+'</span>'}else r+='<button class="btn btn-xs btn-orange" onclick="event.stopPropagation();startPomo('+ti+','+si+')">'+String.fromCharCode(9654)+'</button>'}r+='<button class="btn btn-xs btn-orange" onclick="event.stopPropagation();submitWork('+ti+','+si+')">标记完成</button>';r+='<button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button><button class="btn btn-xs" onclick="event.stopPropagation();ds('+ti+','+si+')">'+String.fromCharCode(10005)+'</button>'}
+    else if(isManager()){r+='<button class="btn btn-xs btn-green" onclick="event.stopPropagation();markComplete('+ti+','+si+')">标记完成</button><button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button><button class="btn btn-xs" onclick="event.stopPropagation();ds('+ti+','+si+')">'+String.fromCharCode(10005)+'</button>'}
+  }else{
+    l='<span class="sub-left"><span class="cb-wrap"><input type="checkbox" onchange="ts('+ti+','+si+')"><span class="cb-box">'+String.fromCharCode(10003)+'</span></span><span class="sub-name">'+esc(s.nm)+'</span><span class="sub-meta"><span>'+esc(s.et||'-')+'</span>'+(s.at?'<span>'+esc(s.at)+'</span>':'')+'</span></span>';
+    if(isM||!s.assignedTo){if(s.pom){if(s.prun){let rem=calcRem(s);r+='<span class="pomo-timer running" id="stpt_'+ti+'_'+si+'">'+fmtTime(rem)+'</span>'}else r+='<button class="btn btn-xs btn-orange" onclick="event.stopPropagation();startPomo('+ti+','+si+')">'+String.fromCharCode(9654)+'</button>'}r+='<button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button><button class="btn btn-xs" onclick="event.stopPropagation();ds('+ti+','+si+')">'+String.fromCharCode(10005)+'</button>'}
+  }
+  r+='</span>';return'<div class="'+rc+'">'+l+r+'</div>'
+}
+
+function subEditHtml(s,ti,si){
+  let dd='';if(isManager())dd=allPeople().map(n=>'<option value="'+esc(n)+'" '+(s.assignedTo===n?'selected':(n===me&&!s.assignedTo?'selected':''))+'>'+esc(n)+(n===me?' (自己)':'')+'</option>').join('');
+  let ha=s.assignedTo?true:false;
+  return'<div class="sub-edit-row"><input class="se-name" id="sedn_'+ti+'_'+si+'" value="'+esc(s.nm)+'"><input class="se-est" id="sede_'+ti+'_'+si+'" value="'+esc(s.et||'')+'" placeholder="h"><label class="chk-mini"><input type="checkbox" id="sedel_'+ti+'_'+si+'" '+(ha?'checked':'')+' onchange="tgEC('+ti+','+si+')">协作</label>'+(isManager()?'<select class="se-colleague" id="sedc_'+ti+'_'+si+'" style="display:'+(ha?'inline-block':'none')+'">'+dd+'</select>':'')+'<label class="chk-mini"><input type="checkbox" id="sepom_'+ti+'_'+si+'" '+(s.pom?'checked':'')+'>'+String.fromCodePoint(127813)+'</label><button class="btn btn-xs btn-primary" onclick="saveEditSub('+ti+','+si+')">保存</button><button class="btn btn-xs" onclick="cancelEditSub('+ti+','+si+')">取消</button></div>'
+}
+function tgEC(ti,si){let e=document.getElementById('sedc_'+ti+'_'+si);if(e)e.style.display=document.getElementById('sedel_'+ti+'_'+si).checked?'inline-block':'none'}
+function startEditSub(ti,si){tsks[ti].sb[si]._ed=true;svs();rdr();setTimeout(()=>{let e=document.getElementById('sedn_'+ti+'_'+si);if(e)e.focus()},100)}
+function cancelEditSub(ti,si){delete tsks[ti].sb[si]._ed;svs();rdr()}
+function saveEditSub(ti,si){
+  let s=tsks[ti].sb[si],n=document.getElementById('sedn_'+ti+'_'+si).value.trim();if(!n){alert('请输入名称');return}
+  s.nm=n;s.et=document.getElementById('sede_'+ti+'_'+si).value.trim();
+  let na=document.getElementById('sedel_'+ti+'_'+si).checked,ce=document.getElementById('sedc_'+ti+'_'+si);
+  if(na&&isManager()&&ce&&ce.tagName==='SELECT'){s.assignedTo=ce.value;s.status='assigned';s.sub=false}
+  else if(na&&!isManager()){s.assignedTo=me;s.status='assigned';s.sub=false}
+  else if(!na){s.assignedTo=null;s.status=null;s.sub=false}
+  s.pom=document.getElementById('sepom_'+ti+'_'+si).checked;if(!s.pom&&s.prun)stopPomo(s);delete s._ed;svs();rdr();renderFocus()
+}
+
+function calcRem(s){let e=Math.floor((Date.now()-s.pstart)/1000);return Math.max(0,pomoSec()-e)}
+function fmtTime(s){let m=Math.floor(s/60),sec=s%60;return m+':'+('0'+sec).slice(-2)}
+function stt(){
+  let t=tsks.length,dm=0,as=0,ds=0,tP=0,myC=0;tsks.forEach(tk=>{if(tk.done)dm++;if(tk.sb){as+=tk.sb.length;tk.sb.forEach(s=>{if(s.done)ds++;tP+=s.pc||0;if(s.assignedTo===me&&!s.done)myC++})}});
+  document.getElementById('tc').textContent=t+(as?'+'+as:'');document.getElementById('mc').textContent=myC;document.getElementById('dc').textContent=dm+ds;document.getElementById('pc').textContent=tP
+}
+function te(i){tsks[i].exp=!tsks[i].exp;svs();rdr()}
+function tt(i){tsks[i].done=!tsks[i].done;if(tsks[i].done){tsks[i].at=nw();if(tsks[i].dl)tsks[i].lcd=ymd();if(tsks[i].sb)tsks[i].sb.forEach(s=>{if(!s.assignedTo||s.status==='submitted'){s.done=true;s.at=s.at||nw();if(s.prun)stopPomo(s)}})}else tsks[i].at='';svs();rdr();renderFocus()}
+function ts(ti,si){let s=tsks[ti].sb[si];if(s.assignedTo&&s.status!=='submitted')return;s.done=!s.done;s.at=s.done?nw():'';if(s.done&&s.prun)stopPomo(s);svs();rdr();renderFocus()}
+function approve(ti,si){let s=tsks[ti].sb[si];if(!isManager()||s.status!=='submitted')return;s.done=true;s.at=nw();s.status='approved';svs();rdr();renderFocus()}
+function submitWork(ti,si){let s=tsks[ti].sb[si];if(s.assignedTo!==me)return;s.status='submitted';s.sub=true;svs();rdr();renderFocus()}
+function withdrawSubmission(ti,si){let s=tsks[ti].sb[si];if(s.assignedTo!==me||s.status!=='submitted')return;s.status='assigned';s.sub=false;svs();rdr();renderFocus()}
+function reject(ti,si){let s=tsks[ti].sb[si];if(!isManager())return;s.status='assigned';s.sub=false;svs();rdr();renderFocus()}
+function markComplete(ti,si){let s=tsks[ti].sb[si];if(!isManager())return;s.done=true;s.at=nw();s.status='completed';svs();rdr();renderFocus()}
+function undoSub(ti,si){let s=tsks[ti].sb[si];if(!isManager()&&s.assignedTo!==me)return;s.done=false;s.at='';s.sub=false;if(s.assignedTo)s.status='assigned';svs();rdr();renderFocus()}
+
+function as(i){
+  let ne=document.getElementById('sn_'+i),ee=document.getElementById('se_'+i),n=ne.value.trim();if(!n)return;
+  let da=document.getElementById('sdel_'+i).checked,at=null,st=null;
+  if(da&&isManager()){let sel=document.getElementById('scsel_'+i);if(sel){at=sel.value;st='assigned'}}
+  else if(da&&!isManager()){at=me;st='assigned'}
+  let pom=document.getElementById('spom_'+i).checked;
+  if(!tsks[i].sb)tsks[i].sb=[];tsks[i].sb.push({id:genId(),nm:n,et:ee.value.trim(),done:false,at:'',assignedTo:at,status:st,sub:false,pom,pc:0,prun:false,pstart:0});
+  tsks[i].exp=true;ne.value='';ee.value='';document.getElementById('sdel_'+i).checked=false;document.getElementById('spom_'+i).checked=false;
+  if(isManager()){let sel=document.getElementById('scsel_'+i);if(sel){sel.style.display='none';sel.selectedIndex=0}};svs();rdr();renderFocus();setTimeout(()=>ne.focus(),300)
+}
+function ds(ti,si){let s=tsks[ti].sb[si];if(!isManager()&&s.assignedTo!==me)return;tsks[ti].sb.splice(si,1);svs();rdr();renderFocus()}
+function dt(i){if(!confirm('删除项目「'+(tsks[i].nm||'')+'」？'))return;tsks.splice(i,1);svs();rdr();renderFocus()}
+function add(){ei=-1;document.getElementById('mt').textContent='新建项目';document.getElementById('en').value='';document.getElementById('ee').value='';document.getElementById('ep').value='medium';document.getElementById('ed').value='';document.getElementById('eDly').checked=false;document.getElementById('sb').textContent='添加';document.getElementById('md').classList.add('show');setTimeout(()=>document.getElementById('en').focus(),80)}
+function edt(i){ei=i;let t=tsks[i];document.getElementById('mt').textContent='编辑项目';document.getElementById('en').value=t.nm||'';document.getElementById('ee').value=t.et||'';document.getElementById('ep').value=t.pr||'medium';document.getElementById('ed').value=t.de||'';document.getElementById('eDly').checked=!!t.dl;document.getElementById('sb').textContent='保存';document.getElementById('md').classList.add('show')}
+function cls(){document.getElementById('md').classList.remove('show');ei=-1}
+function sv(){
+  let n=document.getElementById('en').value.trim();if(!n){alert('请输入名称');return}
+  let et=document.getElementById('ee').value,pr=document.getElementById('ep').value,de=document.getElementById('ed').value,dl=document.getElementById('eDly').checked;
+  if(ei>=0){let o=tsks[ei];o.nm=n;o.et=et;o.pr=pr;o.de=de;if(o.dl!==dl){o.dl=dl;if(dl&&o.done)o.lcd=ymd()}}
+  else tsks.push({id:genId(),nm:n,et,pr,de,done:false,at:'',sb:[],exp:false,dl,lcd:''});svs();rdr();renderFocus();cls()
+}
+
+function startPomo(ti,si){
+  let s=tsks[ti].sb[si];if(s.done||(s.assignedTo&&s.assignedTo!==me))return;if(s.assignedTo===me&&s.status==='submitted')return;
+  s.prun=true;s.pstart=Date.now();pomoTask={ti,si};svs();rdr();renderFocus();showPomoOverlay();startTimer()
+}
+function showPomoOverlay(){
+  document.getElementById('pomoOverlay').classList.add('show');
+  document.getElementById('pomoBigTime').textContent=fmtTime(pomoSec());document.getElementById('pomoBigTime').classList.remove('done');
+  document.getElementById('pomoBigPlay').style.display='none';
+  if(pomoTask)document.getElementById('pomoBigTask').textContent=tsks[pomoTask.ti].sb[pomoTask.si].nm
+}
+function closePomoOverlay(save){
+  if(save===undefined)save=true;
+  document.getElementById('pomoOverlay').classList.remove('show');
+  if(save&&pomoTask){let s=tsks[pomoTask.ti].sb[pomoTask.si];if(s.prun)stopPomo(s);svs();rdr();renderFocus()};pomoTask=null
+}
+function restartPomoFromOverlay(){
+  if(!pomoTask)return;let s=tsks[pomoTask.ti].sb[pomoTask.si];s.prun=true;s.pstart=Date.now();svs();showPomoOverlay();startTimer()
+}
+function pomoOverlayDone(){
+  let bo=document.getElementById('pomoBigTime');if(bo){bo.textContent='0:00';bo.classList.add('done')}
+  document.getElementById('pomoBigPlay').style.display='flex'
+}
+
+function startTimer(){
+  if(timerId)return;timerId=setInterval(()=>{let running=false;
+    for(let i=0;i<tsks.length;i++){let sb=tsks[i].sb||[];for(let j=0;j<sb.length;j++){let s=sb[j];
+      if(s.prun&&!s.done){running=true;let rem=calcRem(s);let stEl=document.getElementById('stpt_'+i+'_'+j);if(stEl)stEl.textContent=fmtTime(rem);let fpEl=document.getElementById('fpt_'+i+'_'+j);if(fpEl)fpEl.textContent=fmtTime(rem);let bo=document.getElementById('pomoBigTime');if(bo)bo.textContent=fmtTime(rem);if(rem<=0){s.pc=(s.pc||0)+1;s.prun=false;s.pstart=0;svs();rdr();renderFocus();pomoOverlayDone()}}}}
+    if(!running){clearInterval(timerId);timerId=null}},1000)
+}
+function stopPomo(s){s.prun=false;s.pstart=0}
+
+function clr(){
+  let ch=false;tsks=tsks.filter(t=>{if(t.dl&&t.done)return true;if(t.done){ch=true;return false}return true});
+  tsks.forEach(t=>{if(t.sb&&t.sb.length){let ol=t.sb.length;t.sb=t.sb.filter(s=>{if(!s.done)return true;if(!isManager()&&s.assignedTo!==me)return true;ch=true;return false});if(t.sb.length!==ol)ch=true}});
+  if(!ch){alert('没有可清理的');return};svs();rdr();renderFocus()
+}
+
+async function exp(){
+  let ename=cfg.expName||'深东项目备份',fname=ename+'_'+new Date().toISOString().slice(0,10)+'.json',json=JSON.stringify(tsks,null,2),blob=new Blob([json],{type:'application/json'});
+  if(expFolderHandle){try{let fh=await expFolderHandle.getFileHandle(fname,{create:true});let w=await fh.createWritable();await w.write(blob);await w.close();alert('已导出：'+fname);return}catch(e){expFolderHandle=null}}
+  try{if(navigator.share&&navigator.canShare({files:[new File([blob],fname,{type:'application/json'})]})){await navigator.share({title:ename,files:[new File([blob],fname,{type:'application/json'})]});return}}catch(e){}
+  let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;a.click()
+}
+
+function imp(){
+  let inp=document.createElement('input');inp.type='file';inp.accept='.json';inp.onchange=function(){let f=this.files[0];if(!f)return;let r=new FileReader();
+    r.onload=function(){try{let d=JSON.parse(r.result);if(!Array.isArray(d))throw new Error();impQueue=d;if(isManager()){showImpDialog(d.length)}else{doImportAdd(d)}}catch(e){alert('文件格式不正确')}};r.readAsText(f)};inp.click()
+}
+function showImpDialog(cnt){
+  let dlg=document.getElementById('impDlg');document.getElementById('impTitle').textContent='导入数据';document.getElementById('impInfo').innerHTML='<b>'+cnt+'</b> 条记录';
+  document.getElementById('impBtns').innerHTML='<button class="btn btn-primary" onclick="doImportOverwrite()" style="font-size:.82rem;padding:10px 20px">覆盖导入</button><button class="btn btn-green" onclick="doImportAdd(impQueue)" style="font-size:.82rem;padding:10px 20px">添加导入</button>';dlg.classList.add('show')
+}
+function doImportOverwrite(){tsks=[...impQueue];tsks.forEach(t=>{if(!t.id)t.id=genId();if(t.sb)t.sb.forEach(s=>{if(!s.id)s.id=genId()})});svs();rdr();renderFocus();cancelImp();alert('覆盖导入成功')}
+function doImportAdd(data){
+  let addT=0,addS=0,existIds=new Set();tsks.forEach(t=>{existIds.add(t.id);if(t.sb)t.sb.forEach(s=>existIds.add(s.id))});
+  data.forEach(t=>{if(!t.id)t.id=genId();if(!existIds.has(t.id)){if(!t.done){if(t.sb)t.sb.forEach(s=>{if(!s.id)s.id=genId();if(s.done)existIds.add(s.id)});tsks.push(t);addT++;existIds.add(t.id)}}else{let ct=tsks.find(et=>et.id===t.id);if(ct&&ct.sb&&t.sb)t.sb.forEach(s=>{if(!s.id)s.id=genId();if(s.done)return;if(!existIds.has(s.id)){let ce=ct.sb.find(es=>es.id===s.id);if(!ce){ct.sb.push(s);addS++;existIds.add(s.id)}}})}});
+  svs();rdr();renderFocus();cancelImp();alert('添加导入：+'+addT+'项目 +'+addS+'待办')
+}
+function cancelImp(){document.getElementById('impDlg').classList.remove('show');impQueue=null}
+
+function renderFocus(){
+  if(curTab!==2)return;
+  let list=[],all=document.getElementById('focusEmpty'),c=document.getElementById('focusList'),today=ymd();
+  tsks.forEach((t,i)=>{if(t.sb)t.sb.forEach((s,si)=>{if(s.assignedTo===me&&!s.done)list.push({s,ti:i,si})})});
+  let doneToday=0;tsks.forEach(t=>{if(t.sb)t.sb.forEach(s=>{if(s.done&&s.assignedTo===me&&s.at&&s.at.startsWith((new Date().getMonth()+1)+'/'+new Date().getDate()))doneToday++})});
+  let myPomo=0;tsks.forEach(t=>{if(t.sb)t.sb.forEach(s=>{if(s.assignedTo===me)myPomo+=s.pc||0})});
+  document.getElementById('fc').textContent=list.length;document.getElementById('fdc').textContent=doneToday;document.getElementById('fpc').textContent=myPomo;document.getElementById('frest').textContent=list.length;
+  if(!list.length){all.style.display='block';c.innerHTML='';return}
+  all.style.display='none';c.innerHTML=list.map((item,idx)=>focusCard(item,idx)).join('')
+}
+function focusCard(item,idx){
+  let s=item.s,ti=item.ti,si=item.si,parent=tsks[ti];
+  return'<div class="focus-card"><span class="cb-wrap" onclick="event.stopPropagation()"><input type="checkbox" onchange="focusDone('+ti+','+si+')"><span class="cb-box">'+String.fromCharCode(10003)+'</span></span><span class="fn"><div class="focus-name">'+esc(s.nm)+'</div><div class="focus-meta">'+esc(parent.nm||'')+' · '+esc(s.et||'-')+'</div></span><span class="fa">'+(s.pom?(s.prun?'<span class="pomo-timer running" id="fpt_'+ti+'_'+si+'">'+fmtTime(calcRem(s))+'</span>':'<button class="btn btn-xs btn-orange" onclick="event.stopPropagation();startPomo('+ti+','+si+')">'+String.fromCharCode(9654)+'</button>')+'<span class="tag tag-pomo">'+(s.pc||0)+'</span>':'')+'<label class="chk-mini" onclick="event.stopPropagation()"><input type="checkbox" '+(s.pom?'checked':'')+' onchange="toggleFocusPom('+ti+','+si+',this.checked)">'+String.fromCodePoint(127813)+'</label>'+(s.status==='submitted'?'<span style="font-size:.6rem;color:var(--yellow);cursor:pointer" onclick="event.stopPropagation();withdrawSubmission('+ti+','+si+')">已提交</span>':'<button class="btn btn-xs btn-orange" onclick="event.stopPropagation();submitWork('+ti+','+si+')">完成</button>')+'</span></div>'
+}
+function toggleFocusPom(ti,si,val){tsks[ti].sb[si].pom=val;svs();rdr();renderFocus()}
+function focusDone(ti,si){let s=tsks[ti].sb[si];if(s.assignedTo&&s.status!=='submitted')return;s.done=!s.done;s.at=s.done?nw():'';if(s.done&&s.prun)stopPomo(s);svs();rdr();renderFocus()}
+
+function openTeamMgmt(){if(!isManager())return;document.getElementById('tmMgName').textContent=cfg.manager;rdrTeamList();document.getElementById('tm').classList.add('show')}
+function closeTeamMgmt(){document.getElementById('tm').classList.remove('show');ldCfg();updateHeaders();rdr();renderFocus()}
+function rdrTeamList(){document.getElementById('tmList').innerHTML=cfg.members.map((m,i)=>'<div class="team-row"><span class="name">'+esc(m.name)+'</span><span style="color:var(--green);font-size:.58rem">伙伴</span><button class="btn btn-xs" onclick="resetPwd('+i+')">重置</button><button class="btn btn-xs btn-danger" onclick="removeMember('+i+')">移除</button></div>').join('')}
+async function addMember(){let n=document.getElementById('tmNewName').value.trim();if(!n){alert('请输入姓名');return};if(allPeople().includes(n)){alert('已存在');return};let pw=document.getElementById('tmNewPwd').value||'123456';cfg.members.push({name:n,role:'member',pwd:await hashPwd(pw)});svCfg();document.getElementById('tmNewName').value='';document.getElementById('tmNewPwd').value='';rdrTeamList()}
+function removeMember(i){let nm=cfg.members[i].name;if(!confirm('移除「'+nm+'」？'))return;cfg.members.splice(i,1);svCfg();rdrTeamList();if(me===nm)logout()}
+async function resetPwd(i){cfg.members[i].pwd=DEF_HASH;svCfg();rdrTeamList();alert('密码已重置')}
+async function changeMgPwd(){let pw=document.getElementById('tmMgPwd').value;if(!pw)return;cfg.managerPwd=await hashPwd(pw);svCfg();document.getElementById('tmMgPwd').value='';alert('已更新')}
+
+function refreshSettings(){
+  document.getElementById('stPomoMins').value=cfg.pomoMins||25;document.getElementById('stExpName').value=cfg.expName||'深东项目备份';document.getElementById('stExpPath').value=cfg.expPath||'浏览器默认下载'
+}
+async function pickExportFolder(){
+  if(!('showDirectoryPicker'in window)){alert('需要Edge/Chrome浏览器');return}
+  try{expFolderHandle=await window.showDirectoryPicker({mode:'readwrite'});cfg.expPath=expFolderHandle.name;svCfg();document.getElementById('stExpPath').value=cfg.expPath}catch(e){}
+}
+async function changePwdFromSettings(){
+  document.getElementById('stPwdErr').textContent='';let old=document.getElementById('stOld').value,n1=document.getElementById('stNew1').value,n2=document.getElementById('stNew2').value;
+  if(!old){document.getElementById('stPwdErr').textContent='请输入旧密码';return}
+  if(!n1){document.getElementById('stPwdErr').textContent='请输入新密码';return}
+  if(n1!==n2){document.getElementById('stPwdErr').textContent='两次不一致';return}
+  if((await hashPwd(old))!==getPwdFor(me)){document.getElementById('stPwdErr').textContent='旧密码错误';return}
+  setPwdFor(me,await hashPwd(n1));svCfg();document.getElementById('stOld').value='';document.getElementById('stNew1').value='';document.getElementById('stNew2').value='';alert('密码修改成功')
+}
+function savePomoSettings(){
+  let v=parseInt(document.getElementById('stPomoMins').value)||25;if(v<1)v=1;if(v>120)v=120;cfg.pomoMins=v;
+  let en=document.getElementById('stExpName').value.trim();if(en)cfg.expName=en;svCfg();rdr();renderFocus();alert('已保存')
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){cls();closeTeamMgmt()}});
+document.getElementById('md').addEventListener('click',function(e){if(e.target===this)cls()});
+document.getElementById('tm').addEventListener('click',function(e){if(e.target===this)closeTeamMgmt()});
+
+if('serviceWorker'in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+
+ldCfg();popLoginNames();
+let stored=localStorage.getItem(KEY_I);
+if(stored&&getPwdFor(stored)){me=stored;showApp()}else{document.getElementById('loginWrap').style.display='flex'}
+</script>
+</body>
+</html>
+</parameter>
+</｜DSML｜invoke
