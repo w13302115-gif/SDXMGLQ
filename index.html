@@ -131,6 +131,15 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 .modal-box .hint{font-size:.6rem;color:#666;margin-top:4px}
 .modal-box .setting-desc{font-size:.62rem;color:var(--muted);margin-top:4px}
 
+.tdm-stat-line{font-size:.72rem;color:#888;margin-bottom:10px}
+.tdm-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border-bottom:1px solid #1f1f2c;background:#12121a;border-radius:6px;margin-bottom:4px}
+.tdm-item .cb-wrap{flex-shrink:0}
+.tdm-item .cb-box{border:2px solid #444;border-radius:4px;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:12px}
+.tdm-item .cb-box.done-check{background:var(--green);border-color:var(--green);color:#000}
+.tdm-item div{font-size:.8rem;color:#ccc}
+.tdm-prj{font-size:.65rem!important;color:#555!important;margin-top:2px}
+.tdm-item.submitted{background:#151a20;border-color:#1a2a40}
+
 .team-member-row{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#14141e;border-radius:6px;margin-bottom:6px;border:1px solid #252530}
 .team-member-row .name{flex:1;font-size:.82rem;color:var(--text)}
 .team-member-row .role-tag{font-size:.58rem;padding:2px 6px;border-radius:3px;font-weight:600}
@@ -224,7 +233,7 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 <div id="view1">
 <div class="stats-bar">
 <div class="stat-card"><div class="num" id="tc">0</div><div class="label">项目/待办</div></div>
-<div class="stat-card"><div class="num" id="mc" style="color:var(--green)">0</div><div class="label">我的待办</div></div>
+<div class="stat-card" onclick="showTodoDetail()" style="cursor:pointer"><div class="num" id="mc" style="color:var(--green)">0</div><div class="label" id="mcl">我的待办</div></div>
 <div class="stat-card done"><div class="num" id="dc">0</div><div class="label">已完成</div></div>
 <div class="stat-card pomo"><div class="num" id="pc">0</div><div class="label">番茄🍅</div></div>
 </div>
@@ -330,6 +339,15 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 </div>
 
 <div class="mb"><button class="btn" onclick="closeSettings()">关闭</button></div>
+</div>
+</div>
+
+<div class="modal-bg" id="tdm">
+<div class="modal-box" style="max-width:600px;max-height:80vh;overflow-y:auto">
+<h3 id="tdmTitle">待办详情</h3>
+<div class="tdm-stat-line">共 <span id="tdmTotal">0</span> 项，已完成 <span id="tdmDone">0</span> 项</div>
+<div id="tdmList"></div>
+<div class="mb" style="margin-top:12px"><button class="btn" onclick="closeTodoDetail()">关闭</button></div>
 </div>
 </div>
 
@@ -600,7 +618,11 @@ function subHtml(s,ti,si){
     }
   }else{
     let selfAssign=!s.assignees||!s.assignees.length;
-    l='<span class="subtask-left"><span class="cb-wrap"><input type="checkbox" onchange="ts('+ti+','+si+')"><span class="cb-box">&#10003;</span></span><span class="subtask-name">'+esc(s.nm)+'</span><span class="subtask-meta"><span>预估:'+esc(s.et||'-')+'</span>'+(s.at?'<span>实际:'+esc(s.at)+'</span>':'')+asgnTags+'</span>'+privTag+'</span>';
+    if(isManager()){
+      l='<span class="subtask-left"><span class="cb-wrap"><input type="checkbox" onchange="ts('+ti+','+si+')"><span class="cb-box">&#10003;</span></span><span class="subtask-name">'+esc(s.nm)+'</span><span class="subtask-meta"><span>预估:'+esc(s.et||'-')+'</span>'+(s.at?'<span>实际:'+esc(s.at)+'</span>':'')+asgnTags+'</span>'+privTag+'</span>';
+    }else{
+      l='<span class="subtask-left"><span class="cb-wrap"><span class="cb-box" style="opacity:.3;cursor:default">-</span></span><span class="subtask-name">'+esc(s.nm)+'</span><span class="subtask-meta"><span>预估:'+esc(s.et||'-')+'</span>'+(s.at?'<span>实际:'+esc(s.at)+'</span>':'')+asgnTags+'</span>'+privTag+'</span>';
+    }
     if(isM||selfAssign){
       if(s.pom){if(s.prun){let rem=calcRem(s);r+='<span class="pomo-timer running" id="stpt_'+ti+'_'+si+'">'+fmtTime(rem)+'</span>'}else r+='<button class="btn btn-xs btn-orange" onclick="event.stopPropagation();startPomo('+ti+','+si+')">▶ '+pomoLabel()+'</button>';r+='<span class="tag tag-pomo">'+(s.pc||0)+'</span>'}
       r+='<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button>';
@@ -660,15 +682,79 @@ function pomoLabel(){let m=cfg.pomoMins||25;return m+'分🍅'}
 
 function stt(){
   let t=tsks.length,dm=0,as=0,ds=0,tP=0,myC=0;
-  tsks.forEach(tk=>{if(tk.done)dm++;if(tk.sb){as+=tk.sb.length;tk.sb.forEach(s=>{if(s.done)ds++;tP+=s.pc||0;if(isInAssignees(s,me)&&!s.done&&s.status!=='submitted')myC++})}});
-  document.getElementById('tc').textContent=t+(as?'+'+as:'');document.getElementById('mc').textContent=myC;
+  tsks.forEach(tk=>{
+    if(tk.done)dm++;
+    if(tk.sb){
+      as+=tk.sb.length;
+      tk.sb.forEach(s=>{
+        if(s.done)ds++;tP+=s.pc||0;
+        if(isManager()){if(!s.done)myC++}else{if(isInAssignees(s,me)&&!s.done&&s.status!=='submitted')myC++}
+      })
+    }
+  });
+  document.getElementById('tc').textContent=t+(as?'+'+as:'');
+  document.getElementById('mc').textContent=myC;
+  document.getElementById('mcl').textContent=isManager()?'全部待办':'我的待办';
   document.getElementById('dc').textContent=dm+ds;document.getElementById('pc').textContent=tP
 }
 
 function te(i){tsks[i].exp=!tsks[i].exp;svs();rdr()}
-function tt(i){tsks[i].done=!tsks[i].done;if(tsks[i].done){tsks[i].at=nw();if(tsks[i].dl)tsks[i].lcd=ymd();if(tsks[i].sb)tsks[i].sb.forEach(s=>{if(!s.assignees||!s.assignees.length||s.status==='submitted'){s.done=true;s.at=s.at||nw();if(s.prun)stopPomo(s)}})}else tsks[i].at='';svs();rdr();renderFocus()}
+
+function showTodoDetail(){
+  let all=[],done=[];
+  tsks.forEach((t,ti)=>{
+    if(!t.sb||!t.sb.length)return;
+    t.sb.forEach((s,si)=>{
+      if(isManager()){
+        if(s.done)done.push({nm:s.nm,prj:t.nm,ti,si,sub:s})
+        else all.push({nm:s.nm,prj:t.nm,ti,si,sub:s})
+      }else{
+        if(!isInAssignees(s,me))return
+        if(s.done)done.push({nm:s.nm,prj:t.nm,ti,si,sub:s})
+        else if(s.status!=='submitted')all.push({nm:s.nm,prj:t.nm,ti,si,sub:s})
+      }
+    })
+  });
+  document.getElementById('tdmTitle').textContent=isManager()?'全部待办详情':'我的待办详情';
+  document.getElementById('tdmTotal').textContent=all.length+done.length;
+  document.getElementById('tdmDone').textContent=done.length;
+  let listHtml='';
+
+  if(isManager()){
+    let subItems=[];
+    all.forEach(it=>{
+      let s=it.sub;
+      if(s.assignees&&s.assignees.length&&s.status==='submitted'){
+        subItems.push('<div class="tdm-item submitted"><span class="cb-wrap" onclick="event.stopPropagation()"><input type="checkbox" onchange="quickApprove('+it.ti+','+it.si+')"><span class="cb-box">&#10003;</span></span><div style="flex:1"><div>'+esc(it.nm)+'</div><div class="tdm-prj">← '+esc(it.prj)+' <span class="tag tag-pending">已提交</span> <span>['+(s.assignees||[]).join(',')+']</span></div></div></div>');
+      }else{
+        let tags='';
+        if(s.assignees&&s.assignees.length)tags=' <span>['+s.assignees.join(',')+']</span>';
+        subItems.push('<div class="tdm-item"><span class="cb-wrap"><span class="cb-box" style="opacity:.3;cursor:default">-</span></span><div style="flex:1"><div>'+esc(it.nm)+'</div><div class="tdm-prj">← '+esc(it.prj)+tags+'</div></div></div>');
+      }
+    });
+    listHtml=subItems.join('')
+  }else{
+    listHtml=all.map(it=>'<div class="tdm-item"><span class="cb-wrap"><span class="cb-box" style="opacity:.3;cursor:default">-</span></span><div style="flex:1"><div>'+esc(it.nm)+'</div><div class="tdm-prj">← '+esc(it.prj)+'</div></div></div>').join('')
+  }
+
+  if(done.length)listHtml+='<div style="margin-top:12px;border-top:1px solid #2a2a3a;padding-top:8px"><div style="color:#666;font-size:.68rem;margin-bottom:6px">已完成 ('+done.length+')</div>'+done.map(it=>'<div class="tdm-item done"><span class="cb-wrap"><span class="cb-box done-check">&#10003;</span></span><div style="flex:1"><div style="text-decoration:line-through;opacity:.5">'+esc(it.nm)+'</div><div class="tdm-prj" style="opacity:.4">← '+esc(it.prj)+'</div></div></div>').join('')+'</div>';
+
+  document.getElementById('tdmList').innerHTML=listHtml||'<div style="text-align:center;color:#555;padding:20px">暂无数据</div>';
+  document.getElementById('tdm').style.display='flex'
+}
+
+function closeTodoDetail(){document.getElementById('tdm').style.display='none';rdr();renderFocus()}
+
+function quickApprove(ti,si){
+  let s=tsks[ti].sb[si];
+  if(!isManager()||s.status!=='submitted')return;
+  s.done=true;s.at=s.at||nw();s.status='approved';
+  svs();rdr();renderFocus();showTodoDetail()
+}
+function tt(i){if(!isManager())return;tsks[i].done=!tsks[i].done;if(tsks[i].done){tsks[i].at=nw();if(tsks[i].dl)tsks[i].lcd=ymd();if(tsks[i].sb)tsks[i].sb.forEach(s=>{if(!s.assignees||!s.assignees.length||s.status==='submitted'){s.done=true;s.at=s.at||nw();if(s.prun)stopPomo(s)}})}else tsks[i].at='';svs();rdr();renderFocus()}
 
 function ts(ti,si){
+  if(!isManager())return;
   let s=tsks[ti].sb[si];
   if(s.assignees&&s.assignees.length&&s.status!=='submitted')return;
   if(s.status==='submitted'&&!isManager())return;
@@ -810,35 +896,33 @@ function clr(){
 }
 
 async function exp(){
-  let ename=cfg.expName||'深东项目备份';
-  let fname=ename+'_'+ymd()+'.json';
-  let exportData;
-  if(cfg.privacyMode){
-    exportData=tsks.map(t=>{
-      let ct={...t};
-      if(ct.private)return null;
-      if(ct.sb&&ct.sb.length){ct.sb=ct.sb.filter(s=>!s.private);if(!ct.sb.length)delete ct.sb}
-      if(!ct.sb||ct.sb.length===0){if(ct.done)return null}
-      return ct
-    }).filter(t=>t!==null);
-    if(!exportData.length){alert('隐私保护已开启，当前无可导出的非隐私任务');return}
-  }else{
-    exportData=tsks;
+  var ename=cfg.expName||'深东项目备份';
+  var d=new Date(),p=function(n){return('0'+n).slice(-2)};
+  var ts=d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'_'+p(d.getHours())+'时';
+  var fname=ename+'_'+ts+'.json';
+  var json=JSON.stringify(tsks,null,2);
+  var blob=new Blob([json],{type:'application/json'});
+  var file=new File([blob],fname,{type:'application/json'});
+
+  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({files:[file],title:'深东项目备份',text:'项目数据备份 - '+ts});
+      return;
+    }catch(e){if(e.name==='AbortError')return}
   }
-  let json=JSON.stringify(exportData,null,2);
-  let blob=new Blob([json],{type:'application/json'});
 
   if(expFolderHandle){
     try{
-      let fh=await expFolderHandle.getFileHandle(fname,{create:true});
-      let w=await fh.createWritable();
+      var fh=await expFolderHandle.getFileHandle(fname,{create:true});
+      var w=await fh.createWritable();
       await w.write(blob);
       await w.close();
-      alert('已导出到：'+fname);
+      alert('已导出：'+fname+'\n\u62D6\u5165\u5FAE\u4FE1\u5373\u53EF\u53D1\u9001');
       return;
     }catch(e){expFolderHandle=null}
   }
-  let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;a.click()
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;a.click();
+  setTimeout(function(){alert('文件已下载：'+fname+'\n\u62D6\u5165\u5FAE\u4FE1\u5373\u53EF\u53D1\u9001')},500)
 }
 
 function imp(){
