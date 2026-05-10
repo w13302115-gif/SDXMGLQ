@@ -107,6 +107,8 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 .chk-mini input{width:auto;margin:0;accent-color:var(--accent)}
 .assignee-panel{display:none;flex-wrap:wrap;gap:4px 10px;padding:6px 10px;background:#14141e;border-radius:6px;border:1px solid #252530;width:100%;margin-top:4px}
 .assignee-panel.show{display:flex}
+.add-sub-toggle{padding:8px 16px 8px 50px;color:#5b8def;font-size:.72rem;cursor:pointer;transition:background .15s;border-radius:6px}
+.add-sub-toggle:hover{background:#1a1a2a}
 .assignee-cb{display:inline-flex;align-items:center;gap:3px;font-size:.62rem;color:#bbb;cursor:pointer;white-space:nowrap}
 .assignee-cb input[type=checkbox]{width:13px;height:13px;accent-color:var(--accent);margin:0}
 .sub-edit-row{display:flex;align-items:center;gap:6px;padding:8px 16px 8px 50px;border-bottom:1px solid #1c1c28;background:#1a1a28;flex-wrap:wrap}
@@ -157,10 +159,12 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 .focus-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:grab;transition:all .15s}
 .focus-card:hover{border-color:#444;background:#1e1e2a}
 .focus-card.focus-submitted{border-left:3px solid var(--yellow)}
+.focus-card.focus-other{border-left:3px solid #333;opacity:.75}
 .focus-card.dragging{opacity:.3;transform:scale(.97)}
 .focus-card.drag-target{border-color:var(--green)!important;border-style:dashed}
 .focus-card .fn{flex:1;min-width:0}
 .focus-card .fn .focus-name{font-size:.78rem;color:#e0e0e0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.focus-card .fn .focus-prj{font-size:.6rem;color:#555;margin-top:1px}
 .focus-card .fn .focus-meta{font-size:.58rem;color:#555;margin-top:1px}
 .focus-card .fa{display:flex;align-items:center;gap:5px;flex-shrink:0;flex-wrap:wrap}
 .focus-empty{text-align:center;padding:80px 20px;color:#444;font-size:.82rem;line-height:2}
@@ -344,10 +348,15 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 
 <div class="modal-bg" id="tdm">
 <div class="modal-box" style="max-width:600px;max-height:80vh;overflow-y:auto">
-<h3 id="tdmTitle">待办详情</h3>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+<h3 id="tdmTitle" style="margin:0">待办详情</h3>
+<div style="display:flex;gap:8px">
+<button class="btn btn-xs btn-orange" onclick="goFocusFromTdm()">🎯 专注模式</button>
+<button class="btn btn-xs" onclick="closeTodoDetail()" style="font-size:1rem;padding:4px 8px">✕</button>
+</div>
+</div>
 <div class="tdm-stat-line">共 <span id="tdmTotal">0</span> 项，已完成 <span id="tdmDone">0</span> 项</div>
 <div id="tdmList"></div>
-<div class="mb" style="margin-top:12px"><button class="btn" onclick="closeTodoDetail()">关闭</button></div>
 </div>
 </div>
 
@@ -374,19 +383,10 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 </div>
 </div>
 
-<div class="modal-bg" id="impDlg">
-<div class="modal-box" style="text-align:center">
-<h3 id="impTitle">导入数据</h3>
-<div id="impInfo" style="margin:12px 0;font-size:.8rem;color:#ccc"></div>
-<div id="impBtns"></div>
-<div style="margin-top:12px"><button class="btn btn-sm" onclick="cancelImp()">取消</button></div>
-</div>
-</div>
-
 <script>
 const KEY_T='xl_tm_tasks',KEY_C='xl_tm_cfg',KEY_I='xl_tm_identity';
 let tsks=[],cfg={},me='',ei=-1,dragIdx=-1,curView=1;
-let pomoTask=null,timerId=null,impQueue=null,expFolderHandle=null,activePomos={};
+var pomoTask=null,timerId=null,expFolderHandle=null,activePomos={},showAddSubFor={};
 
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
 function esc(s){if(!s)return'';let d=document.createElement('div');d.textContent=s;return d.innerHTML}
@@ -555,11 +555,25 @@ function leaveSub(ti,si){
 }
 
 function addSubRowHtml(i){
-  let allP=allPeople(),cbHtml=allP.map(n=>'<label class="assignee-cb"><input type="checkbox" value="'+esc(n)+'"> '+esc(n)+'</label>').join('');
-  return '<div class="add-sub-row"><input class="si-name" id="sn_'+i+'" placeholder="+ 待办项" onkeydown="if(event.key===\'Enter\')as('+i+')"><input class="si-est" id="se_'+i+'" placeholder="预估"><label class="chk-mini"><input type="checkbox" id="sdel_'+i+'" onchange="tgCD('+i+')">协作</label><label class="chk-mini"><input type="checkbox" id="spom_'+i+'">🍅</label><button class="btn btn-xs btn-primary" onclick="as('+i+')">添加</button></div>'+
-    '<div class="assignee-panel" id="ap_'+i+'">'+cbHtml+'</div>'
+  var open=showAddSubFor[i];
+  var allP=allPeople(),cbHtml=allP.map(function(n){return'<label class="assignee-cb"><input type="checkbox" value="'+esc(n)+'"> '+esc(n)+'</label>'}).join('');
+  return'<div class="add-sub-toggle" id="addSubBtn_'+i+'" style="'+(open?'display:none':'')+'" onclick="showAddSub('+i+')">+ 添加待办项</div>'+
+    '<div class="add-sub-row" id="addSubRow_'+i+'" style="'+(open?'display:flex':'display:none')+'"><input class="si-name" id="sn_'+i+'" placeholder="+ 待办项" onkeydown="if(event.key===\'Enter\')as('+i+')"><input class="si-est" id="se_'+i+'" placeholder="预估"><label class="chk-mini"><input type="checkbox" id="sdel_'+i+'" onchange="tgCD('+i+')">协作</label><label class="chk-mini"><input type="checkbox" id="spom_'+i+'">🍅</label><button class="btn btn-xs btn-primary" onclick="as('+i+')">添加</button><button class="btn btn-xs" onclick="hideAddSub('+i+')">取消</button></div>'+
+    '<div class="assignee-panel" id="ap_'+i+'">'+cbHtml+'</div>';
 }
 function tgCD(i){let e=document.getElementById('ap_'+i);if(e)e.style.display=document.getElementById('sdel_'+i).checked?'flex':'none'}
+function showAddSub(i){
+  showAddSubFor[i]=true;
+  tsks[i].exp=true;rdr();
+  setTimeout(function(){var ne=document.getElementById('sn_'+i);if(ne)ne.focus()},100)
+}
+function hideAddSub(i){
+  showAddSubFor[i]=false;
+  document.getElementById('sn_'+i).value='';document.getElementById('se_'+i).value='';
+  document.getElementById('sdel_'+i).checked=false;document.getElementById('spom_'+i).checked=false;
+  var panel=document.getElementById('ap_'+i);if(panel){panel.style.display='none';var cbs=panel.querySelectorAll('input[type=checkbox]');cbs.forEach(function(cb){cb.checked=false})}
+  rdr();
+}
 
 function subHtml(s,ti,si){
   if(s._ed)return subEditHtml(s,ti,si);
@@ -575,7 +589,7 @@ function subHtml(s,ti,si){
 
   if(s.done){
     let ex='';if(s.pc)ex='<span>'+s.pc+'🍅</span>';
-    return'<div class="'+rc+'"><span class="subtask-left"><span class="cb-wrap" onclick="event.stopPropagation()"><input type="checkbox" checked onchange="undoSub('+ti+','+si+')"><span class="cb-box">&#10003;</span></span><span class="subtask-name">'+esc(s.nm)+'</span><span class="subtask-meta"><span>预估:'+esc(s.et||'-')+'</span><span>实际:'+esc(s.at||'')+'</span>'+ex+'</span>'+privTag+asgnTags+'</span><span class="subtask-right">'+(isM||isManager()?'<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button><button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button><button class="btn btn-xs" onclick="event.stopPropagation();ds('+ti+','+si+')">✕</button>':'')+'</span></div>';
+    return'<div class="'+rc+'"><span class="subtask-left"><span class="cb-wrap" onclick="event.stopPropagation()"><input type="checkbox" checked onchange="undoSub('+ti+','+si+')"><span class="cb-box">&#10003;</span></span><span class="subtask-name">'+esc(s.nm)+'</span><span class="subtask-meta"><span>预估:'+esc(s.et||'-')+'</span><span>实际:'+esc(s.at||'')+'</span>'+ex+'</span>'+privTag+asgnTags+'</span><span class="subtask-right">'+(isManager()?'<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button><button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button><button class="btn btn-xs" onclick="event.stopPropagation();ds('+ti+','+si+')">✕</button>':(isM?'<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button><button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button>':''))+'</span></div>';
   }
 
   let l='',r='<span class="subtask-right">';
@@ -593,7 +607,6 @@ function subHtml(s,ti,si){
       r+='<button class="btn btn-xs btn-blue" onclick="event.stopPropagation();withdrawSubmission('+ti+','+si+')">撤回</button>';
       r+='<button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button>';
       r+='<button class="btn btn-xs" onclick="event.stopPropagation();leaveSub('+ti+','+si+')">退出</button>';
-      r+='<button class="btn btn-xs" onclick="event.stopPropagation();ds('+ti+','+si+')">✕</button>';
     }else{
       r+='<button class="btn btn-xs btn-blue" onclick="event.stopPropagation();joinSub('+ti+','+si+')">加入</button>';
       r+='<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button>';
@@ -606,7 +619,6 @@ function subHtml(s,ti,si){
       r+='<button class="btn btn-xs btn-orange" onclick="event.stopPropagation();submitWork('+ti+','+si+')">标记完成</button>';
       r+='<button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button>';
       r+='<button class="btn btn-xs" onclick="event.stopPropagation();leaveSub('+ti+','+si+')">退出</button>';
-      r+='<button class="btn btn-xs" onclick="event.stopPropagation();ds('+ti+','+si+')">✕</button>';
     }else if(isManager()){
       r+='<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button>';
       r+='<button class="btn btn-xs btn-green" onclick="event.stopPropagation();markComplete('+ti+','+si+')">标记完成</button>';
@@ -623,7 +635,11 @@ function subHtml(s,ti,si){
     }else{
       l='<span class="subtask-left"><span class="cb-wrap"><span class="cb-box" style="opacity:.3;cursor:default">-</span></span><span class="subtask-name">'+esc(s.nm)+'</span><span class="subtask-meta"><span>预估:'+esc(s.et||'-')+'</span>'+(s.at?'<span>实际:'+esc(s.at)+'</span>':'')+asgnTags+'</span>'+privTag+'</span>';
     }
-    if(isM||selfAssign){
+    if(isM){
+      if(s.pom){if(s.prun){let rem=calcRem(s);r+='<span class="pomo-timer running" id="stpt_'+ti+'_'+si+'">'+fmtTime(rem)+'</span>'}else r+='<button class="btn btn-xs btn-orange" onclick="event.stopPropagation();startPomo('+ti+','+si+')">▶ '+pomoLabel()+'</button>';r+='<span class="tag tag-pomo">'+(s.pc||0)+'</span>'}
+      r+='<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button>';
+      r+='<button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button>';
+    }else if(selfAssign){
       if(s.pom){if(s.prun){let rem=calcRem(s);r+='<span class="pomo-timer running" id="stpt_'+ti+'_'+si+'">'+fmtTime(rem)+'</span>'}else r+='<button class="btn btn-xs btn-orange" onclick="event.stopPropagation();startPomo('+ti+','+si+')">▶ '+pomoLabel()+'</button>';r+='<span class="tag tag-pomo">'+(s.pc||0)+'</span>'}
       r+='<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button>';
       r+='<button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button>';
@@ -744,6 +760,7 @@ function showTodoDetail(){
 }
 
 function closeTodoDetail(){document.getElementById('tdm').style.display='none';rdr();renderFocus()}
+function goFocusFromTdm(){document.getElementById('tdm').style.display='none';switchView(2)}
 
 function quickApprove(ti,si){
   let s=tsks[ti].sb[si];
@@ -791,10 +808,8 @@ function as(i){
   let pom=document.getElementById('spom_'+i).checked;
   if(!tsks[i].sb)tsks[i].sb=[];
   tsks[i].sb.push({id:genId(),nm:n,et:ee.value.trim(),done:false,at:'',assignees:st?assignees:null,status:st,sub:false,pom,pc:0,prun:false,pstart:0,private:false});
-  tsks[i].exp=true;ne.value='';ee.value='';
-  document.getElementById('sdel_'+i).checked=false;document.getElementById('spom_'+i).checked=false;
-  let panel=document.getElementById('ap_'+i);if(panel){panel.style.display='none';let cbAll=panel.querySelectorAll('input[type=checkbox]');cbAll.forEach(cb=>cb.checked=false)}
-  svs();rdr();renderFocus();setTimeout(()=>ne.focus(),300)
+  tsks[i].exp=true;hideAddSub(i);
+  svs();rdr();renderFocus()
 }
 
 function ds(ti,si){
@@ -926,86 +941,84 @@ async function exp(){
 }
 
 function imp(){
-  let inp=document.createElement('input');inp.type='file';inp.accept='.json';
-  inp.onchange=function(){let f=this.files[0];if(!f)return;let r=new FileReader();
-    r.onload=function(){try{let d=JSON.parse(r.result);if(!Array.isArray(d))throw new Error();
-      impQueue=d;
-      d.forEach(t=>{if(t.sb)t.sb.forEach(s=>{if(s.assignedTo&&!s.assignees){s.assignees=[s.assignedTo];delete s.assignedTo}})});
-      if(isManager()){showImpDialog(d.length)}else{doImportAdd(d)}
+  var inp=document.createElement('input');inp.type='file';inp.accept='.json';
+  inp.onchange=function(){var f=this.files[0];if(!f)return;var r=new FileReader();
+    r.onload=function(){try{var d=JSON.parse(r.result);if(!Array.isArray(d))throw new Error();
+      mergeImport(d);
     }catch(e){alert('导入失败：文件格式不正确')}};
     r.readAsText(f)
   };inp.click()
 }
-function showImpDialog(cnt){
-  let dlg=document.getElementById('impDlg');
-  document.getElementById('impTitle').textContent='导入数据';
-  document.getElementById('impInfo').innerHTML='检测到 <b>'+cnt+'</b> 条项目记录<br>请选择导入方式：';
-  document.getElementById('impBtns').innerHTML=
-    '<button class="btn btn-primary" onclick="doImportOverwrite()" style="font-size:.85rem;padding:10px 24px">📋 覆盖导入</button>'+
-    '<button class="btn btn-green" onclick="doImportAdd(impQueue)" style="font-size:.85rem;padding:10px 24px">➕ 添加导入</button>';
-  dlg.classList.add('show')
-}
-function doImportOverwrite(){
-  tsks=[...impQueue];tsks.forEach(t=>{if(!t.id)t.id=genId();if(t.sb)t.sb.forEach(s=>{if(!s.id)s.id=genId();if(s.assignedTo&&!s.assignees){s.assignees=[s.assignedTo];delete s.assignedTo}})});
-  svs();rdr();renderFocus();cancelImp();alert('覆盖导入成功！共 '+impQueue.length+' 条项目')
-}
-function doImportAdd(data){
-  let addT=0,addS=0,existIds=new Set();
-  tsks.forEach(t=>{existIds.add(t.id);if(t.sb)t.sb.forEach(s=>existIds.add(s.id))});
-  data.forEach(t=>{
-    if(!t.id)t.id=genId();
-    if(!existIds.has(t.id)){
-      if(!t.done){
-        if(t.sb)t.sb.forEach(s=>{if(!s.id)s.id=genId();if(s.done)existIds.add(s.id)});
-        tsks.push(t);addT++;existIds.add(t.id);
-      }
+function mergeImport(data){
+  var norm=function(s){if(s.assignedTo&&!s.assignees){s.assignees=[s.assignedTo];delete s.assignedTo}};
+  data.forEach(function(t){if(t.sb)t.sb.forEach(norm)});
+  var addT=0,addS=0,updS=0,updT=0;
+  var localMap={};
+  tsks.forEach(function(t){localMap[t.id]=t});
+  data.forEach(function(impT){
+    if(!impT.id)impT.id=genId();
+    var localT=localMap[impT.id];
+    if(!localT){
+      tsks.push(impT);addT++;localMap[impT.id]=impT;
     }else{
-      let ct=tsks.find(et=>et.id===t.id);
-      if(ct&&ct.sb&&t.sb){
-        t.sb.forEach(s=>{
-          if(!s.id)s.id=genId();
-          if(s.done)return;
-          if(!existIds.has(s.id)){
-            let ce=ct.sb.find(es=>es.id===s.id);
-            if(!ce){ct.sb.push(s);addS++;existIds.add(s.id)}
-          }
-        })
+      var changed=(impT.nm!==localT.nm||impT.exp!==localT.exp||impT.done!==localT.done);
+      localT.nm=impT.nm||localT.nm;localT.exp=impT.exp;localT.done=localT.done||impT.done;
+      if(changed)updT++;
+      if(impT.sb&&impT.sb.length){
+        if(!localT.sb)localT.sb=[];
+        var subMap={};
+        localT.sb.forEach(function(s){subMap[s.id]=s});
+        impT.sb.forEach(function(impS){
+          if(!impS.id)impS.id=genId();
+          var localS=subMap[impS.id];
+          if(!localS){localT.sb.push(impS);addS++}else{Object.assign(localS,impS);updS++}
+        });
       }
     }
   });
-  svs();rdr();renderFocus();cancelImp();
-  alert('添加导入成功！\n新增 '+addT+' 个项目，'+addS+' 个待办项\n（已完成的未重复添加）')
+  svs();rdr();renderFocus();
+  var parts=[];
+  if(addT)parts.push(addT+'个项目');
+  if(addS)parts.push(addS+'个待办');
+  if(updT+updS)parts.push('更新'+(updT+updS)+'项状态');
+  alert('合并完成！\n'+(parts.length?parts.join('，')+'。':'无变化。'));
 }
-function cancelImp(){document.getElementById('impDlg').classList.remove('show');impQueue=null}
 
 function renderFocus(){
   if(curView!==2)return;
-  let list=[],all=document.getElementById('focusEmpty'),c=document.getElementById('focusList');
-  tsks.forEach((t,i)=>{
-    if(t.sb)t.sb.forEach((s,si)=>{
+  var list=[],all=document.getElementById('focusEmpty'),c=document.getElementById('focusList');
+  tsks.forEach(function(t,i){
+    if(t.sb)t.sb.forEach(function(s,si){
       if(s.done)return;
       if(isManager()){
-        if(isInAssignees(s,me)&&s.status!=='submitted')list.push({s,ti:i,si,type:'mine'});
-        if(s.status==='submitted')list.push({s,ti:i,si,type:'submitted'})
+        if(isInAssignees(s,me)&&s.status!=='submitted')list.push({s,ti:i,si,type:'mine',prj:t.nm||''});
+        if(s.status==='submitted')list.push({s,ti:i,si,type:'submitted',prj:t.nm||''});
+        if(!isInAssignees(s,me)&&s.status!=='submitted')list.push({s,ti:i,si,type:'other',prj:t.nm||''})
       }else{
-        if(isInAssignees(s,me))list.push({s,ti:i,si,type:s.status==='submitted'?'submitted':'mine'})
+        if(isInAssignees(s,me))list.push({s,ti:i,si,type:s.status==='submitted'?'submitted':'mine',prj:t.nm||''})
       }
     })
   });
+  list.sort(function(a,b){
+    var o={mine:0,submitted:1,other:2};
+    return(o[a.type]||99)-(o[b.type]||99)
+  });
   if(!list.length){all.style.display='block';c.innerHTML='';return};all.style.display='none';
-  c.innerHTML=list.map((item,idx)=>focusCard(item,idx)).join('')
+  c.innerHTML=list.map(function(item,idx){return focusCard(item,idx)}).join('')
 }
 
 function focusCard(item,idx){
-  let s=item.s,ti=item.ti,si=item.si,type=item.type;
-  let cc=type==='submitted'?' focus-submitted':'';
-  return'<div class="focus-card'+cc+'" data-idx="'+idx+'" draggable="true" ondragstart="focusDragStart(event,'+idx+')" ondragover="focusDragOver(event,'+idx+')" ondragleave="focusDragLeave(event,'+idx+')" ondrop="focusDrop(event,'+idx+')" ondragend="focusDragEnd(event)"><span class="fn"><div class="focus-name">'+esc(s.nm)+(type==='submitted'?'<span style="color:var(--yellow);font-size:.58rem;margin-left:6px">已提交</span>':'')+'</div>'+
+  var s=item.s,ti=item.ti,si=item.si,type=item.type,prj=item.prj||'';
+  var cc=type==='submitted'?' focus-submitted':(type==='other'?' focus-other':'');
+  return'<div class="focus-card'+cc+'" data-idx="'+idx+'" draggable="true" ondragstart="focusDragStart(event,'+idx+')" ondragover="focusDragOver(event,'+idx+')" ondragleave="focusDragLeave(event,'+idx+')" ondrop="focusDrop(event,'+idx+')" ondragend="focusDragEnd(event)"><span class="fn"><div class="focus-name">'+esc(s.nm)+(type==='submitted'?'<span style="color:#fbbf24;font-size:.58rem;margin-left:6px">已提交</span>':'')+'</div>'+
+    (prj?'<div class="focus-prj">← '+esc(prj)+'</div>':'')+
     (s.et?'<div class="focus-meta">'+esc(s.et)+'</div>':'')+'</span>'+
     '<span class="fa">'+
     (type==='submitted'?
       (isManager()?'<button class="btn btn-xs btn-green" onclick="event.stopPropagation();approve('+ti+','+si+')">确认</button><button class="btn btn-xs" onclick="event.stopPropagation();reject('+ti+','+si+')">发回</button>':
        '<button class="btn btn-xs btn-blue" onclick="event.stopPropagation();withdrawSubmission('+ti+','+si+')">撤回</button>')
-     :('<button class="btn btn-xs btn-orange" onclick="event.stopPropagation();submitWork('+ti+','+si+')">完成</button>'+
+     :(type==='other'?'<span style="color:#555;font-size:.65rem">待分配</span>':
+       '<button class="btn btn-xs btn-orange" onclick="event.stopPropagation();submitWork('+ti+','+si+')">完成</button>'+
        (s.pom?'<button class="btn btn-xs btn-orange" onclick="event.stopPropagation();startPomo('+ti+','+si+')">▶ '+pomoLabel()+'</button>'+
         '<span class="tag tag-pomo">'+(s.pc||0)+'</span>':
         '<label class="chk-mini" title="开启番茄钟" onclick="event.stopPropagation()"><input type="checkbox" onchange="toggleFocusPom('+ti+','+si+',this.checked)">🍅</label>')
@@ -1133,13 +1146,11 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){cls();closeTeamMgmt
 ['md','tm','st'].forEach(id=>{document.getElementById(id).addEventListener('click',function(e){if(e.target===this){if(id==='md')cls();else if(id==='tm')closeTeamMgmt();else closeSettings()}})});
 
 function handleDropFiles(files){
-  if(!files||!files.length)return;let f=files[0];
+  if(!files||!files.length)return;var f=files[0];
   if(!f.name.toLowerCase().endsWith('.json')){alert('仅支持导入 .json 格式文件');return}
-  let r=new FileReader();
-  r.onload=function(){try{let d=JSON.parse(r.result);if(!Array.isArray(d))throw new Error();
-    d.forEach(t=>{if(t.sb)t.sb.forEach(s=>{if(s.assignedTo&&!s.assignees){s.assignees=[s.assignedTo];delete s.assignedTo}})});
-    impQueue=d;
-    if(isManager()){showImpDialog(d.length)}else{doImportAdd(d)}
+  var r=new FileReader();
+  r.onload=function(){try{var d=JSON.parse(r.result);if(!Array.isArray(d))throw new Error();
+    mergeImport(d);
   }catch(e){alert('导入失败：文件格式不正确')}};
   r.readAsText(f)
 }
