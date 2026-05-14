@@ -33,6 +33,10 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 .btn-blue{border-color:#204060;color:var(--blue);background:#102030}.btn-blue:hover{background:#182838}
 .btn-pink{border-color:#502040;color:var(--pink);background:#201018}.btn-pink:hover{background:#301828}
 .btn-xs{padding:3px 9px;font-size:0.62rem}
+.btn-xxs{padding:2px 5px;font-size:.55rem;border-radius:3px;background:#1a1a2a;border:1px solid #333;color:#888;cursor:pointer;line-height:1}
+.btn-xxs:hover{color:#ccc;border-color:#555}
+.btn-quad-act{color:#fff!important;border-color:#5b8def!important;background:#1a1a3a!important}
+.quad-btns{display:flex;gap:2px;margin-right:6px}
 
 .toggle-switch{position:relative;display:inline-flex;align-items:center;gap:10px;cursor:pointer;font-size:.78rem;color:var(--text)}
 .toggle-switch input{position:absolute;opacity:0;width:0;height:0}
@@ -88,11 +92,20 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 .expand-icon.open{transform:rotate(90deg)}
 .subtask-panel{border-top:1px solid #252530;background:#13131c;max-height:0;overflow:hidden;transition:max-height .3s}
 .subtask-panel.open{max-height:6000px}
-.subtask-row{display:flex;align-items:center;gap:8px;padding:8px 16px 8px 50px;border-bottom:1px solid #1c1c28;transition:background .12s;flex-wrap:wrap}
+.subtask-row{display:flex;align-items:center;gap:8px;padding:8px 16px 8px 50px;border-bottom:1px solid #1c1c28;transition:background .12s;flex-wrap:wrap;cursor:grab;user-select:none;-webkit-user-select:none}
+.subtask-row:active{cursor:grabbing}
 .subtask-row:hover{background:#181824}
+.subtask-row.sub-dragging{opacity:.25;transform:scale(.98);cursor:grabbing}
 .subtask-row.done{opacity:.38}.subtask-row.done .subtask-name{text-decoration:line-through;color:#555}
 .subtask-row.my-task{background:#0a1a0a;border-left:3px solid var(--green)}.subtask-row.my-task:hover{background:#0d1d0d}
 .subtask-row.others-task{opacity:.55}.subtask-row.others-task:hover{opacity:.72}
+.subtask-row.sub-drag-over{border-top:2px solid var(--green)!important;box-shadow:inset 0 1px 8px rgba(52,211,153,.12)}
+.subtask-panel.sub-drop-zone{border:2px dashed var(--green)!important;background:rgba(52,211,153,.05)}
+.subtask-panel.sub-drop-zone .subtask-row.sub-drag-over{border-top-color:var(--green)!important}
+.sub-drag-ghost{background:#1a1a2a;border:1px solid var(--green);border-radius:8px;padding:6px 16px;font-size:.76rem;color:#ccc;box-shadow:0 8px 24px rgba(0,0,0,.5);white-space:nowrap;pointer-events:none}
+.sub-move-sel{background:#1a1a24;border:1px solid #333;border-radius:4px;color:#aaa;font-size:.6rem;padding:2px 4px;margin-left:4px;cursor:pointer;max-width:80px}
+.sub-move-sel:hover{border-color:#f87171;color:#f87171}
+.sub-move-sel option{background:#1a1a24;color:#ccc}
 .subtask-left{display:flex;align-items:center;gap:8px;flex:1;min-width:200px}
 .subtask-name{font-size:.76rem;color:#ccc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .subtask-meta{display:flex;align-items:center;gap:7px;font-size:.6rem;color:#666;flex-shrink:0;flex-wrap:wrap}
@@ -155,20 +168,39 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 .focus-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:14px 24px;background:var(--card);border-radius:var(--radius);border:1px solid var(--border);flex-wrap:wrap;gap:12px}
 .focus-header .focus-title{font-size:1.1rem;font-weight:700;background:linear-gradient(135deg,#34d399,#22c55e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .focus-header .focus-sub{font-size:.68rem;color:var(--muted)}
-.focus-list{display:flex;flex-direction:column;gap:8px}
+.focus-list{display:flex;flex-direction:column;gap:6px}
+.focus-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.focus-quad{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px;min-height:80px;display:flex;flex-direction:column}
+.fq-title{font-size:.75rem;font-weight:700;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #222;text-align:center}
+.fq-q0{color:#f87171;border-bottom-color:rgba(248,113,113,.3)}
+.fq-q1{color:#fbbf24;border-bottom-color:rgba(251,191,36,.3)}
+.fq-q2{color:#fb923c;border-bottom-color:rgba(251,146,60,.3)}
+.fq-q3{color:#34d399;border-bottom-color:rgba(52,211,153,.3)}
+.focus-quad.drag-qover{border-color:var(--green)!important;border-style:dashed;background:#12121e}
 .focus-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:grab;transition:all .15s}
 .focus-card:hover{border-color:#444;background:#1e1e2a}
+.focus-card.q0{border-left:3px solid #f87171}
+.focus-card.q1{border-left:3px solid #fbbf24}
+.focus-card.q2{border-left:3px solid #fb923c}
+.focus-card.q3{border-left:3px solid #34d399}
 .focus-card.focus-submitted{border-left:3px solid var(--yellow)}
-.focus-card.focus-other{border-left:3px solid #333;opacity:.75}
 .focus-card.dragging{opacity:.3;transform:scale(.97)}
 .focus-card.drag-target{border-color:var(--green)!important;border-style:dashed}
 .focus-card .fn{flex:1;min-width:0}
 .focus-card .fn .focus-name{font-size:.78rem;color:#e0e0e0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .focus-card .fn .focus-prj{font-size:.6rem;color:#555;margin-top:1px}
 .focus-card .fn .focus-meta{font-size:.58rem;color:#555;margin-top:1px}
-.focus-card .fa{display:flex;align-items:center;gap:5px;flex-shrink:0;flex-wrap:wrap}
+.focus-card .fa{display:flex;align-items:center;gap:5px;flex-shrink:1;flex-wrap:wrap;justify-content:flex-end}
+.focus-assign-sel{background:#1a1a24;border:1px solid #333;border-radius:3px;color:#f87171;font-size:.58rem;padding:1px 3px;cursor:pointer;max-width:68px}
+.focus-assign-sel:hover{border-color:#f87171}
+.focus-assign-sel option{background:#1a1a24;color:#ccc}
+.focus-prj-sep{font-size:.58rem;color:#777;padding:6px 0 3px 0;margin-top:6px;border-top:1px solid #222;text-align:left;letter-spacing:1px;cursor:default;user-select:none}
+.focus-prj-sep:first-child{margin-top:0;border-top:none;padding-top:0}
+.focus-card.blocked{animation:blkFlash .4s ease}
+@keyframes blkFlash{0%,100%{box-shadow:inset 0 0 0 rgba(248,113,113,0)}50%{box-shadow:inset 0 0 20px rgba(248,113,113,.6);border-color:#f87171}}
 .focus-empty{text-align:center;padding:80px 20px;color:#444;font-size:.82rem;line-height:2}
 .focus-empty .big-icon{font-size:3rem;margin-bottom:12px}
+@media(max-width:640px){.focus-grid{grid-template-columns:1fr}}
 
 .pomo-overlay{position:fixed;inset:0;background:rgba(10,10,18,.95);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:990}
 .pomo-overlay.show{display:flex}
@@ -261,7 +293,12 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 <button class="btn btn-sm" onclick="switchView(1)">← 返回看板</button>
 </div>
 </div>
-<div class="focus-list" id="focusList"></div>
+<div class="focus-grid" id="focusGrid">
+<div class="focus-quad" id="fqWrap0" ondragover="quadDragOver(event,0)" ondragleave="quadDragLeave(event,0)" ondrop="quadDrop(event,0)"><div class="fq-title fq-q0">🔴 重要+紧急</div><div class="focus-list" id="fqList0"></div></div>
+<div class="focus-quad" id="fqWrap1" ondragover="quadDragOver(event,1)" ondragleave="quadDragLeave(event,1)" ondrop="quadDrop(event,1)"><div class="fq-title fq-q1">🟡 重要+不紧急</div><div class="focus-list" id="fqList1"></div></div>
+<div class="focus-quad" id="fqWrap2" ondragover="quadDragOver(event,2)" ondragleave="quadDragLeave(event,2)" ondrop="quadDrop(event,2)"><div class="fq-title fq-q2">🟠 不重要+紧急</div><div class="focus-list" id="fqList2"></div></div>
+<div class="focus-quad" id="fqWrap3" ondragover="quadDragOver(event,3)" ondragleave="quadDragLeave(event,3)" ondrop="quadDrop(event,3)"><div class="fq-title fq-q3">🟢 不重要+不紧急</div><div class="focus-list" id="fqList3"></div></div>
+</div>
 <div class="focus-empty" id="focusEmpty">
 <div class="big-icon">✨</div>
 <div>暂无待办任务</div>
@@ -340,6 +377,15 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 <button class="btn btn-sm" onclick="pickExportFolder()">📁 选择文件夹</button>
 <button class="btn btn-sm" onclick="setupAutoStart()">🚀 配置开机启动</button>
 </div>
+</div>
+
+<div class="sec">
+<div class="fld"><label>数据维护</label></div>
+<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+<button class="btn btn-sm btn-danger" onclick="repairDataDiag()">🔍 数据诊断</button>
+<button class="btn btn-sm" onclick="exp()">📤 导出备份</button>
+</div>
+<div style="color:var(--muted);font-size:.65rem;margin-top:6px" id="repairMsg">如果子任务错位，请先导出备份，然后在看板中手动调整</div>
 </div>
 
 <div class="mb"><button class="btn" onclick="closeSettings()">关闭</button></div>
@@ -546,7 +592,7 @@ function cd(t,i){
     '<button class="btn btn-xs" onclick="event.stopPropagation();edt('+i+')">编辑</button>'+
     '<button class="btn btn-xs btn-danger" onclick="event.stopPropagation();dt('+i+')">删除</button></span>'+
     '<span class="expand-icon'+oc+'">&#9654;</span></div>'+
-    '<div class="subtask-panel'+oc+'">'+sh+addSubRowHtml(i)+'</div></div>';
+    '<div class="subtask-panel'+oc+'" data-ti="'+i+'">'+sh+addSubRowHtml(i)+'</div></div>';
 }
 
 function toggleTaskPrivate(i){
@@ -603,7 +649,7 @@ function subHtml(s,ti,si){
 
   if(s.done){
     let ex='';if(s.pc)ex='<span>'+s.pc+'🍅</span>';
-    return'<div class="'+rc+'"><span class="subtask-left"><span class="cb-wrap" onclick="event.stopPropagation()"><input type="checkbox" checked onchange="undoSub('+ti+','+si+')"><span class="cb-box">&#10003;</span></span><span class="subtask-name">'+esc(s.nm)+'</span><span class="subtask-meta"><span>预估:'+esc(s.et||'-')+'</span><span>实际:'+esc(s.at||'')+'</span>'+ex+'</span>'+privTag+asgnTags+'</span><span class="subtask-right">'+(isManager()?'<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button><button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button><button class="btn btn-xs" onclick="event.stopPropagation();ds('+ti+','+si+')">✕</button>':(isM?'<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button><button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button>':''))+'</span></div>';
+    return'<div class="'+rc+'" data-ti="'+ti+'" data-si="'+si+'"><span class="subtask-left"><span class="cb-wrap" onclick="event.stopPropagation()"><input type="checkbox" checked onchange="undoSub('+ti+','+si+')"><span class="cb-box">&#10003;</span></span><span class="subtask-name">'+esc(s.nm)+'</span><span class="subtask-meta"><span>预估:'+esc(s.et||'-')+'</span><span>实际:'+esc(s.at||'')+'</span>'+ex+'</span>'+privTag+asgnTags+'</span><span class="subtask-right">'+(isManager()?'<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button><button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button><button class="btn btn-xs" onclick="event.stopPropagation();ds('+ti+','+si+')">✕</button>':(isM?'<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button><button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button>':''))+'</span>'+(isManager()?'<select class="sub-move-sel" onchange="moveSubToProject('+ti+','+si+',this.value)" onclick="event.stopPropagation()" title="移动子任务到其他项目"><option value="">↗</option>'+getProjOpts(ti)+'</select>':'')+'</div>';
   }
 
   let l='',r='<span class="subtask-right">';
@@ -667,7 +713,8 @@ function subHtml(s,ti,si){
       r+='<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button>';
     }
   }
-  r+='</span>';return'<div class="'+rc+'">'+l+r+'</div>';
+  r+='</span>';var mSel='';if(isManager())mSel='<select class="sub-move-sel" onchange="moveSubToProject('+ti+','+si+',this.value)" onclick="event.stopPropagation()" title="移动子任务到其他项目"><option value="">↗</option>'+getProjOpts(ti)+'</select>';
+  return'<div class="'+rc+'" data-ti="'+ti+'" data-si="'+si+'">'+l+r+mSel+'</div>';
 }
 
 function subEditHtml(s,ti,si){
@@ -821,7 +868,7 @@ function as(i){
   }
   let pom=document.getElementById('spom_'+i).checked;
   if(!tsks[i].sb)tsks[i].sb=[];
-  tsks[i].sb.push({id:genId(),nm:n,et:ee.value.trim(),done:false,at:'',assignees:st?assignees:null,status:st,sub:false,pom,pc:0,prun:false,pstart:0,private:false});
+  tsks[i].sb.push({id:genId(),nm:n,et:ee.value.trim(),done:false,at:'',assignees:st?assignees:null,status:st,sub:false,pom,pc:0,prun:false,pstart:0,private:false,quad:0});
   tsks[i].exp=true;hideAddSub(i);
   svs();rdr();renderFocus()
 }
@@ -917,6 +964,119 @@ function dragOver(e,i){e.preventDefault();if(i===dragIdx)return;let card=documen
 function dragLeave(e,i){let card=document.getElementById('tcard_'+i);if(card)card.classList.remove('drag-target')}
 function dragEnd(e){document.querySelectorAll('.task-card').forEach(c=>c.classList.remove('dragging','drag-target'));dragIdx=-1}
 function drop(e,i){e.preventDefault();document.querySelectorAll('.task-card').forEach(c=>c.classList.remove('dragging','drag-target'));if(i===dragIdx||dragIdx<0)return;let item=tsks.splice(dragIdx,1)[0];tsks.splice(i,0,item);dragIdx=-1;svs();rdr()}
+
+var subDrTi=-1,subDrSi=-1,subDrEl=null,subDrX=0,subDrY=0,subDrOffX=0,subDrOffY=0,subDrGhost=null,subDrMoved=false,subDrHover=null;
+function initSubDrag(){
+  document.addEventListener('mousedown',function(e){
+    var row=e.target.closest('.subtask-row');
+    if(!row||row.querySelector('.sub-edit-row'))return;
+    if(e.target.closest('select')||e.target.closest('button'))return;
+    var ti=parseInt(row.getAttribute('data-ti')),si=parseInt(row.getAttribute('data-si'));
+    if(isNaN(ti)||isNaN(si))return;
+    subDrTi=ti;subDrSi=si;subDrEl=row;subDrMoved=false;
+    subDrX=e.clientX;subDrY=e.clientY;
+    var rect=row.getBoundingClientRect();
+    subDrOffX=e.clientX-rect.left;subDrOffY=e.clientY-rect.top;
+  })
+  window.addEventListener('mousemove',function(e){
+    if(!subDrEl)return;
+    var dx=e.clientX-subDrX,dy=e.clientY-subDrY;
+    if(!subDrMoved&&Math.abs(dx)<2&&Math.abs(dy)<2)return;
+    if(!subDrMoved){
+      subDrMoved=true;
+      subDrEl.classList.add('sub-dragging');
+      subDrGhost=document.createElement('div');
+      subDrGhost.className='sub-drag-ghost';
+      subDrGhost.textContent=subDrEl.querySelector('.subtask-name')?subDrEl.querySelector('.subtask-name').textContent:'';
+      subDrGhost.style.position='fixed';subDrGhost.style.zIndex='9999';
+      subDrGhost.style.pointerEvents='none';
+      document.body.appendChild(subDrGhost)
+    }
+    subDrGhost.style.left=(e.clientX-subDrOffX)+'px';
+    subDrGhost.style.top=(e.clientY-subDrOffY)+'px';
+    var over=document.elementFromPoint(e.clientX,e.clientY);
+    if(over){
+      var overRow=over.closest('.subtask-row');
+      if(overRow&&overRow!==subDrEl){
+        if(subDrHover&&subDrHover!==overRow)subDrHover.classList.remove('sub-drag-over');
+        overRow.classList.add('sub-drag-over');subDrHover=overRow;
+      }else{
+        var overPanel=over.closest('.subtask-panel');
+        if(overPanel){
+          if(subDrHover&&subDrHover!==overPanel)subDrHover.classList.remove('sub-drag-over');
+          overPanel.classList.add('sub-drop-zone');subDrHover=overPanel;
+        }else{
+          if(subDrHover){subDrHover.classList.remove('sub-drag-over','sub-drop-zone');subDrHover=null}
+        }
+      }
+    }
+  })
+  window.addEventListener('mouseup',function(e){
+    if(!subDrEl)return;
+    if(subDrGhost){subDrGhost.remove();subDrGhost=null}
+    document.querySelectorAll('.subtask-row').forEach(function(r){r.classList.remove('sub-dragging','sub-drag-over')});
+    document.querySelectorAll('.subtask-panel').forEach(function(p){p.classList.remove('sub-drop-zone')});
+    if(!subDrMoved){subDrTi=-1;subDrSi=-1;subDrEl=null;subDrHover=null;return}
+    var over=document.elementFromPoint(e.clientX,e.clientY);
+    if(!over){subDrTi=-1;subDrSi=-1;subDrEl=null;subDrHover=null;return}
+    var overRow=over.closest('.subtask-row');
+    if(overRow&&overRow!==subDrEl){
+      var tgi=parseInt(overRow.getAttribute('data-ti')),tgsi=parseInt(overRow.getAttribute('data-si'));
+      if(!isNaN(tgi)&&!isNaN(tgsi)){
+        var srcS=tsks[subDrTi].sb[subDrSi],tgtS=tsks[tgi].sb[tgsi];
+        if(srcS&&tgtS){
+          tsks[subDrTi].sb.splice(subDrSi,1);
+          var ni=tsks[tgi].sb.indexOf(tgtS);if(ni<0)ni=tsks[tgi].sb.length;
+          tsks[tgi].sb.splice(ni,0,srcS);
+          svs();rdr();renderFocus()
+        }
+      }
+    }else{
+      var overPanel=over.closest('.subtask-panel');
+      if(overPanel){
+        var tgi=parseInt(overPanel.getAttribute('data-ti'));
+        if(!isNaN(tgi)&&tgi!==subDrTi){
+          var srcS=tsks[subDrTi].sb[subDrSi];
+          if(srcS){
+            tsks[subDrTi].sb.splice(subDrSi,1);
+            if(!tsks[tgi].sb)tsks[tgi].sb=[];
+            tsks[tgi].sb.push(srcS);
+            svs();rdr();renderFocus()
+          }
+        }
+      }
+    }
+    subDrTi=-1;subDrSi=-1;subDrEl=null;subDrHover=null
+  })
+}
+
+function getProjOpts(cti){
+  return tsks.map(function(t,i){
+    if(i===cti)return'';
+    return'<option value="'+i+'">'+esc(t.nm||'未命名')+'</option>';
+  }).join('');
+}
+function moveSubToProject(ti,si,targetTi){
+  targetTi=parseInt(targetTi);
+  if(isNaN(targetTi)||targetTi===ti)return;
+  if(!tsks[ti]||!tsks[ti].sb||!tsks[targetTi])return;
+  var src=tsks[ti].sb[si];
+  if(!src)return;
+  tsks[ti].sb.splice(si,1);
+  if(!tsks[targetTi].sb)tsks[targetTi].sb=[];
+  tsks[targetTi].sb.push(src);
+  svs();rdr();renderFocus();
+}
+function moveSubInProject(ti,si,targetSi){
+  targetSi=parseInt(targetSi);
+  if(isNaN(targetSi)||targetSi===si||!tsks[ti]||!tsks[ti].sb)return;
+  if(targetSi<0||targetSi>=tsks[ti].sb.length)return;
+  var src=tsks[ti].sb.splice(si,1)[0];
+  if(!src)return;
+  if(targetSi>si)targetSi--;
+  tsks[ti].sb.splice(targetSi,0,src);
+  svs();rdr();renderFocus();
+}
 
 function clr(){
   let ch=false;tsks=tsks.filter(t=>{if(t.dl&&t.done)return true;if(t.done){ch=true;return false}return true});
@@ -1015,38 +1175,51 @@ function mergeImport(data){
 
 function renderFocus(){
   if(curView!==2)return;
-  var list=[],all=document.getElementById('focusEmpty'),c=document.getElementById('focusList');
+  var all=document.getElementById('focusEmpty'),quadLists=[[],[],[],[]];
   tsks.forEach(function(t,i){
     if(t.sb)t.sb.forEach(function(s,si){
       if(s.done)return;
       if(isManager()){
-        if(isInAssignees(s,me)&&s.status!=='submitted')list.push({s,ti:i,si,type:'mine',prj:t.nm||''});
-        if(s.status==='submitted')list.push({s,ti:i,si,type:'submitted',prj:t.nm||''});
-        if(!isInAssignees(s,me)&&s.status!=='submitted')list.push({s,ti:i,si,type:'other',prj:t.nm||''})
+        if(isInAssignees(s,me)&&s.status!=='submitted')quadLists[s.quad||0].push({s,ti:i,si,type:'mine',prj:t.nm||''});
+        if(s.status==='submitted')quadLists[s.quad||0].push({s,ti:i,si,type:'submitted',prj:t.nm||''});
+        if(!isInAssignees(s,me)&&s.status!=='submitted')quadLists[s.quad||0].push({s,ti:i,si,type:'other',prj:t.nm||''})
       }else{
-        if(isInAssignees(s,me))list.push({s,ti:i,si,type:s.status==='submitted'?'submitted':'mine',prj:t.nm||''})
+        if(isInAssignees(s,me)&&s.status!=='submitted')quadLists[s.quad||0].push({s,ti:i,si,type:'mine',prj:t.nm||''})
       }
     })
   });
-  list.sort(function(a,b){
-    var o={mine:0,submitted:1,other:2};
-    return(o[a.type]||99)-(o[b.type]||99)
-  });
-  if(!list.length){all.style.display='block';c.innerHTML='';return};all.style.display='none';
-  c.innerHTML=list.map(function(item,idx){return focusCard(item,idx)}).join('')
+  var total=quadLists[0].length+quadLists[1].length+quadLists[2].length+quadLists[3].length;
+  if(!total){all.style.display='block';for(var q=0;q<4;q++)document.getElementById('fqList'+q).innerHTML='';return}
+  all.style.display='none';
+  for(var q=0;q<4;q++){
+    var html='',lastTi=-1;
+    quadLists[q].forEach(function(item,idx){
+      if(item.ti!==lastTi){
+        html+='<div class="focus-prj-sep">▸ '+esc(item.prj||'未命名项目')+'</div>';
+        lastTi=item.ti
+      }
+      item.q=q;item.idx=idx;
+      html+=focusCard(item);
+    });
+    document.getElementById('fqList'+q).innerHTML=html
+  }
 }
 
-function focusCard(item,idx){
-  var s=item.s,ti=item.ti,si=item.si,type=item.type,prj=item.prj||'';
-  var cc=type==='submitted'?' focus-submitted':(type==='other'?' focus-other':'');
-  return'<div class="focus-card'+cc+'" data-idx="'+idx+'" draggable="true" ondragstart="focusDragStart(event,'+idx+')" ondragover="focusDragOver(event,'+idx+')" ondragleave="focusDragLeave(event,'+idx+')" ondrop="focusDrop(event,'+idx+')" ondragend="focusDragEnd(event)"><span class="fn"><div class="focus-name">'+esc(s.nm)+(type==='submitted'?'<span style="color:#fbbf24;font-size:.58rem;margin-left:6px">已提交</span>':'')+'</div>'+
+function focusCard(item){
+  var s=item.s,ti=item.ti,si=item.si,type=item.type,prj=item.prj||'',q=item.q,idx=item.idx;
+  var qc=' q'+q,subTag=(type==='submitted'?' focus-submitted':'');
+  return'<div class="focus-card'+qc+subTag+'" data-q="'+q+'" data-idx="'+idx+'" data-ti="'+ti+'" data-si="'+si+'" draggable="true" ondragstart="focusDragStart(event,'+q+','+idx+')" ondragover="focusDragOver(event,'+q+','+idx+')" ondragleave="focusDragLeave(event)" ondrop="focusDrop(event,'+q+','+idx+')" ondragend="focusDragEnd(event)">'+
+    '<span class="fn"><div class="focus-name">'+esc(s.nm)+(type==='submitted'?'<span style="color:#fbbf24;font-size:.58rem;margin-left:6px">已提交</span>':'')+'</div>'+
     (prj?'<div class="focus-prj">← '+esc(prj)+'</div>':'')+
     (s.et?'<div class="focus-meta">'+esc(s.et)+'</div>':'')+'</span>'+
     '<span class="fa">'+
+    '<span class="quad-btns">'+
+    ['①','②','③','④'].map(function(lb,qi){return'<button class="btn btn-xxs'+(qi===q?' btn-quad-act':'')+'" onclick="event.stopPropagation();moveQuadrant('+ti+','+si+','+qi+')" title="移到'+['重要+紧急','重要+不紧急','不重要+紧急','不重要+不紧急'][qi]+'">'+lb+'</button>'}).join('')+
+    '</span>'+
     (type==='submitted'?
       (isManager()?'<button class="btn btn-xs btn-green" onclick="event.stopPropagation();approve('+ti+','+si+')">确认</button><button class="btn btn-xs" onclick="event.stopPropagation();reject('+ti+','+si+')">发回</button>':
        '<button class="btn btn-xs btn-blue" onclick="event.stopPropagation();withdrawSubmission('+ti+','+si+')">撤回</button>')
-     :(type==='other'?'<span style="color:#555;font-size:.65rem">待分配</span>':
+     :(type==='other'?(s.assignees&&s.assignees.length?'<span style="color:#888;font-size:.6rem">已分配: '+esc(s.assignees.slice(0,2).join(',')+(s.assignees.length>2?'…':''))+'</span>':'<select class="focus-assign-sel" onchange="quickAssign('+ti+','+si+',this.value)" onclick="event.stopPropagation()"><option value="">待分配</option>'+allPeople().map(function(n){return'<option value="'+esc(n)+'">'+esc(n)+'</option>'}).join('')+'</select>'):
        '<button class="btn btn-xs btn-orange" onclick="event.stopPropagation();submitWork('+ti+','+si+')">完成</button>'+
        (s.pom?'<button class="btn btn-xs btn-orange" onclick="event.stopPropagation();startPomo('+ti+','+si+')">▶ '+pomoLabel()+'</button>'+
         '<span class="tag tag-pomo">'+(s.pc||0)+'</span>':
@@ -1055,36 +1228,79 @@ function focusCard(item,idx){
     '<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'个人待办')+'">🔒</button>'+
     '</span></div>'
 }
-function toggleFocusPom(ti,si,val){tsks[ti].sb[si].pom=val;svs();rdr();renderFocus()}
-let focusDragIdx=-1;
-function focusDragStart(e,idx){focusDragIdx=idx;e.currentTarget.classList.add('dragging');e.dataTransfer.effectAllowed='move'}
-function focusDragOver(e,idx){e.preventDefault();if(idx===focusDragIdx)return;e.currentTarget.classList.add('drag-target')}
-function focusDragLeave(e,idx){e.currentTarget.classList.remove('drag-target')}
-function focusDragEnd(e){document.querySelectorAll('.focus-card').forEach(c=>c.classList.remove('dragging','drag-target'));focusDragIdx=-1}
-function focusDrop(e,idx){
-  e.preventDefault();
-  document.querySelectorAll('.focus-card').forEach(c=>c.classList.remove('dragging','drag-target'));
-  if(idx===focusDragIdx||focusDragIdx<0)return;
-  reorderFocus(idx);focusDragIdx=-1
+
+function moveQuadrant(ti,si,q){
+  tsks[ti].sb[si].quad=q;svs();rdr();renderFocus()
 }
-function reorderFocus(idx){
-  if(idx===focusDragIdx||focusDragIdx<0)return;
-  let items=[];
-  tsks.forEach((t,i)=>{
-    if(t.sb)t.sb.forEach((s,si)=>{
-      if(s.done)return;
-      if(isManager()){
-        if(isInAssignees(s,me)&&s.status!=='submitted')items.push({ti:i,si});
-        if(s.status==='submitted')items.push({ti:i,si})
-      }else{
-        if(isInAssignees(s,me))items.push({ti:i,si})
-      }
-    })
-  });
-  if(idx>=items.length||focusDragIdx>=items.length)return;
-  let src=items[focusDragIdx],tgt=items[idx],srcS=tsks[src.ti].sb[src.si],tgtS=tsks[tgt.ti].sb[tgt.si];
-  tsks[src.ti].sb.splice(src.si,1);let newIdx=tsks[tgt.ti].sb.indexOf(tgtS);
-  if(newIdx<0)newIdx=tsks[tgt.ti].sb.length;tsks[tgt.ti].sb.splice(newIdx,0,srcS);focusDragIdx=-1;svs();rdr();renderFocus()
+function quickAssign(ti,si,name){
+  if(!name||!isManager())return;
+  var s=tsks[ti].sb[si];
+  if(!s)return;
+  if(!s.assignees)s.assignees=[];
+  if(s.assignees.includes(name))return;
+  s.assignees.push(name);
+  s.status='assigned';
+  svs();rdr();renderFocus();
+}
+function toggleFocusPom(ti,si,val){tsks[ti].sb[si].pom=val;svs();rdr();renderFocus()}
+var focusDragIdx=-1,focusDragQ=-1,focusDragTi=-1,focusDragSi=-1;
+function focusDragStart(e,q,idx){
+  var card=e.currentTarget;
+  focusDragIdx=idx;focusDragQ=q;
+  focusDragTi=parseInt(card.dataset.ti);
+  focusDragSi=parseInt(card.dataset.si);
+  card.classList.add('dragging');e.dataTransfer.effectAllowed='move'
+}
+function focusDragOver(e,q,idx){
+  e.preventDefault();
+  if(q===focusDragQ&&idx===focusDragIdx)return;
+  e.currentTarget.classList.add('drag-target')
+}
+function focusDragLeave(e){e.currentTarget.classList.remove('drag-target')}
+function focusDragEnd(e){
+  document.querySelectorAll('.focus-card').forEach(function(c){c.classList.remove('dragging','drag-target')});
+  focusDragIdx=-1;focusDragQ=-1
+}
+function focusDrop(e,q,idx){
+  e.preventDefault();
+  document.querySelectorAll('.focus-card').forEach(function(c){c.classList.remove('dragging','drag-target')});
+  if(focusDragIdx<0)return;
+  if(q===focusDragQ&&idx!==focusDragIdx){
+    reorderFocus(q,idx)
+  }
+  focusDragIdx=-1;focusDragQ=-1
+}
+function reorderFocus(q,idx){
+  if(focusDragIdx<0||focusDragTi<0||focusDragSi<0)return;
+  var card=e2c(q,idx);
+  if(!card)return;
+  var tgi=parseInt(card.dataset.ti);
+  if(focusDragTi!==tgi){
+    var sc=e2c(focusDragQ,focusDragIdx);
+    if(sc){sc.classList.add('blocked');setTimeout(function(){sc.classList.remove('blocked')},450)}
+    focusDragIdx=-1;focusDragQ=-1;return;
+  }
+  var tgsi=parseInt(card.dataset.si);
+  var srcS=tsks[focusDragTi].sb[focusDragSi];
+  var tgtS=tsks[tgi].sb[tgsi];
+  if(!tgtS)return;
+  tsks[focusDragTi].sb.splice(focusDragSi,1);
+  var newIdx=tsks[tgi].sb.indexOf(tgtS);
+  if(newIdx<0)newIdx=tsks[tgi].sb.length;
+  tsks[tgi].sb.splice(newIdx,0,srcS);
+  focusDragIdx=-1;focusDragQ=-1;svs();rdr();renderFocus()
+}
+function e2c(q,idx){return document.querySelector('#fqList'+q+' .focus-card[data-idx="'+idx+'"]')}
+
+function quadDragOver(e,q){e.preventDefault();if(q===focusDragQ)return;document.getElementById('fqWrap'+q).classList.add('drag-qover')}
+function quadDragLeave(e,q){document.getElementById('fqWrap'+q).classList.remove('drag-qover')}
+function quadDrop(e,q){
+  e.preventDefault();
+  document.querySelectorAll('.focus-quad').forEach(function(el){el.classList.remove('drag-qover')});
+  if(focusDragIdx<0||focusDragTi<0||focusDragSi<0)return;
+  if(q===focusDragQ){focusDragIdx=-1;focusDragQ=-1;return}
+  tsks[focusDragTi].sb[focusDragSi].quad=q;
+  focusDragIdx=-1;focusDragQ=-1;svs();rdr();renderFocus()
 }
 
 function openTeamMgmt(){if(!isManager())return;document.getElementById('tmMgName').textContent='团队管理 - 深东';rdrTeamList();document.getElementById('tm').classList.add('show')}
@@ -1126,6 +1342,19 @@ function closeSettings(){
   let en=document.getElementById('stExpName').value.trim();
   if(en){cfg.expName=en;svCfg()}
   document.getElementById('st').classList.remove('show');ldCfg();rdr();renderFocus()
+}
+
+function repairDataDiag(){
+  var report=[],totalSubs=0,anomalies=[];
+  tsks.forEach(function(t,i){
+    var subCount=t.sb?t.sb.length:0;
+    totalSubs+=subCount;
+    report.push({prj:t.nm||'未命名',idx:i,subs:subCount,doneSubs:t.sb?t.sb.filter(function(s){return s.done}).length:0})
+  });
+  var msg='📊 数据诊断报告\n━━━━━━━━━━━━\n项目总数：'+tsks.length+' 个\n子任务总数：'+totalSubs+' 个\n\n各项目统计：\n';
+  report.forEach(function(r){msg+='  ▸ '+r.prj+'：'+r.subs+' 个子任务（'+r.doneSubs+' 已完成）\n'});
+  msg+='\n💡 如果子任务错位：\n1. 先点「导出备份」保存数据\n2. 在看板中对比各项目的子任务\n3. 错位的子任务点「编辑→删除」后\n   在正确项目下重新添加';
+  document.getElementById('repairMsg').innerHTML=msg.replace(/\n/g,'<br>');
 }
 
 async function pickExportFolder(){
@@ -1204,6 +1433,7 @@ document.addEventListener('drop',function(e){
   let files=e.dataTransfer.files;if(files&&files.length)handleDropFiles(files)
 });
 
+initSubDrag();
 ldCfg();popLoginNames();onLoginSel();
 let stored=localStorage.getItem(KEY_I);
 if(stored&&stored===cfg.manager){me=stored;showApp()}else if(stored&&getPwdFor(stored)!==undefined){
