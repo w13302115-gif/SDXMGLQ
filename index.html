@@ -200,7 +200,25 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 @keyframes blkFlash{0%,100%{box-shadow:inset 0 0 0 rgba(248,113,113,0)}50%{box-shadow:inset 0 0 20px rgba(248,113,113,.6);border-color:#f87171}}
 .focus-empty{text-align:center;padding:80px 20px;color:#444;font-size:.82rem;line-height:2}
 .focus-empty .big-icon{font-size:3rem;margin-bottom:12px}
-@media(max-width:640px){.focus-grid{grid-template-columns:1fr}}
+@media(max-width:640px){
+  .focus-grid{grid-template-columns:1fr}
+  .focus-card{padding:6px 8px;gap:6px;flex-wrap:wrap}
+  .focus-card .fn{font-size:.7rem}
+  .focus-card .fn .focus-name{font-size:.7rem}
+  .focus-card .fa{gap:2px}
+  .focus-card .fa .btn-xxs{padding:1px 3px;font-size:.5rem}
+  .focus-card .fa .btn-xs{padding:1px 6px;font-size:.58rem}
+  .fq-title{font-size:.68rem;margin-bottom:6px;padding-bottom:5px}
+  .focus-quad{padding:6px}
+  .focus-list{gap:4px}
+  .focus-prj-sep{font-size:.52rem;padding:3px 0 2px 0}
+  .stats-bar{grid-template-columns:1fr 1fr}
+  .header{padding:10px 14px}
+  .task-row{padding:10px 12px;gap:6px}
+  .btn{font-size:.68rem;padding:5px 10px}
+  .ganta-overlay .ganta-time{font-size:4rem}
+  .ganta-overlay .ganta-btn{width:100px;height:100px;font-size:2rem}
+}
 
 .pomo-overlay{position:fixed;inset:0;background:rgba(10,10,18,.95);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:990}
 .pomo-overlay.show{display:flex}
@@ -220,6 +238,26 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 .mini-pomo .mini-time.done{color:var(--green)}
 .mini-pomo .mini-task{font-size:.7rem;color:var(--muted);text-align:center;margin-top:6px}
 .mini-pomo .mini-close{position:absolute;top:6px;right:10px;background:none;border:none;color:#555;cursor:pointer;font-size:1rem}
+
+.ganta-overlay{position:fixed;inset:0;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:1000}
+.ganta-overlay.show{display:flex}
+.ganta-overlay .ganta-time{font-size:6rem;font-weight:300;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:4px;margin-bottom:20px}
+.ganta-overlay .ganta-task{font-size:1rem;color:#555;max-width:80%;text-align:center;margin-bottom:30px}
+.ganta-overlay .ganta-btn{width:140px;height:140px;border-radius:50%;border:2px solid #34d399;background:rgba(52,211,153,.1);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:3rem;color:#34d399;transition:all .2s}
+.ganta-overlay .ganta-btn:active{background:rgba(52,211,153,.3);transform:scale(.95)}
+.ganta-overlay .ganta-close{position:fixed;bottom:30px;right:30px;width:40px;height:40px;border:1px solid #333;border-radius:50%;background:#111;color:#555;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem}
+.ganta-popup{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:1001;flex-direction:column}
+.ganta-popup.show{display:flex}
+.ganta-popup .gp-card{background:var(--card);border:1px solid #333;border-radius:16px;padding:24px 20px;text-align:center;max-width:280px;width:90%}
+.ganta-popup .gp-name{font-size:.9rem;color:#e0e0e0;margin-bottom:6px}
+.ganta-popup .gp-prj{font-size:.62rem;color:#555;margin-bottom:16px}
+.ganta-popup .gp-go{display:inline-block;padding:14px 40px;background:var(--green);color:#000;border:none;border-radius:10px;font-size:1.2rem;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:2px}
+.ganta-popup .gp-go:active{opacity:.8;transform:scale(.96)}
+.ganta-popup .gp-cancel{display:block;margin-top:12px;background:none;border:none;color:#555;font-size:.72rem;cursor:pointer;font-family:inherit}
+
+.sort-arrow{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:1px solid #333;border-radius:3px;background:#1a1a24;color:#666;cursor:pointer;font-size:.55rem;line-height:1;flex-shrink:0;transition:all .1s}
+.sort-arrow:active{background:#2a2a3a;color:#ccc}
+.sort-arrows{display:flex;flex-direction:column;gap:1px;margin-right:4px;flex-shrink:0}
 
 .drop-overlay{position:fixed;inset:0;background:rgba(108,92,231,.15);border:3px dashed var(--accent);display:none;align-items:center;justify-content:center;z-index:950}
 .drop-overlay.show{display:flex}.drop-overlay.active{background:rgba(52,211,153,.2);border-color:var(--green)}
@@ -295,10 +333,10 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 </div>
 </div>
 <div class="focus-grid" id="focusGrid">
-<div class="focus-quad" id="fqWrap0" ondragover="quadDragOver(event,0)" ondragleave="quadDragLeave(event,0)" ondrop="quadDrop(event,0)"><div class="fq-title fq-q0">🔴 重要+紧急</div><div class="focus-list" id="fqList0"></div></div>
-<div class="focus-quad" id="fqWrap1" ondragover="quadDragOver(event,1)" ondragleave="quadDragLeave(event,1)" ondrop="quadDrop(event,1)"><div class="fq-title fq-q1">🟡 重要+不紧急</div><div class="focus-list" id="fqList1"></div></div>
-<div class="focus-quad" id="fqWrap2" ondragover="quadDragOver(event,2)" ondragleave="quadDragLeave(event,2)" ondrop="quadDrop(event,2)"><div class="fq-title fq-q2">🟠 不重要+紧急</div><div class="focus-list" id="fqList2"></div></div>
-<div class="focus-quad" id="fqWrap3" ondragover="quadDragOver(event,3)" ondragleave="quadDragLeave(event,3)" ondrop="quadDrop(event,3)"><div class="fq-title fq-q3">🟢 不重要+不紧急</div><div class="focus-list" id="fqList3"></div></div>
+<div class="focus-quad" id="fqWrap0"><div class="fq-title fq-q0">🔴 重要+紧急</div><div class="focus-list" id="fqList0"></div></div>
+<div class="focus-quad" id="fqWrap1"><div class="fq-title fq-q1">🟡 重要+不紧急</div><div class="focus-list" id="fqList1"></div></div>
+<div class="focus-quad" id="fqWrap2"><div class="fq-title fq-q2">🟠 不重要+紧急</div><div class="focus-list" id="fqList2"></div></div>
+<div class="focus-quad" id="fqWrap3"><div class="fq-title fq-q3">🟢 不重要+不紧急</div><div class="focus-list" id="fqList3"></div></div>
 </div>
 <div class="focus-empty" id="focusEmpty">
 <div class="big-icon">✨</div>
@@ -459,6 +497,22 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 </div>
 </div>
 
+<div class="ganta-popup" id="gantaPopup">
+<div class="gp-card">
+<div class="gp-name" id="gpName"></div>
+<div class="gp-prj" id="gpPrj"></div>
+<button class="gp-go" onclick="startGanta()">⚡ 干他</button>
+<button class="gp-cancel" onclick="closeGantaPopup()">取消</button>
+</div>
+</div>
+
+<div class="ganta-overlay" id="gantaOverlay">
+<div class="ganta-time" id="gantaTime">25:00</div>
+<div class="ganta-task" id="gantaTask"></div>
+<button class="ganta-btn" onclick="finishGanta()">✓</button>
+<button class="ganta-close" onclick="finishGanta()">✕</button>
+</div>
+
 <script>
 const KEY_T='xl_tm_tasks',KEY_C='xl_tm_cfg',KEY_I='xl_tm_identity';
 let tsks=[],cfg={},me='',ei=-1,dragIdx=-1,curView=1;
@@ -598,7 +652,8 @@ function cd(t,i){
   if(myPending>0)capt+='<span style="color:var(--green);font-weight:600">我:'+myPending+'</span>';
   let dlyTag=t.dl?'<span class="tag tag-daily">每日</span>':'';
   let privTag=t.private?'<span class="tag tag-private">个人待办</span>':'';
-  return '<div class="task-card'+cc+'" id="tcard_'+i+'"><div class="task-row" draggable="true" ondragstart="dragStart(event,'+i+')" ondragover="dragOver(event,'+i+')" ondragleave="dragLeave(event,'+i+')" ondrop="drop(event,'+i+')" ondragend="dragEnd(event)" onclick="te('+i+')">'+
+  return '<div class="task-card'+cc+'" id="tcard_'+i+'"><div class="task-row" onclick="te('+i+')">'+
+    '<span class="sort-arrows"><button class="sort-arrow" onclick="event.stopPropagation();moveProjectUp('+i+')" title="上移">▲</button><button class="sort-arrow" onclick="event.stopPropagation();moveProjectDown('+i+')" title="下移">▼</button></span>'+
     '<span class="cb-wrap" onclick="event.stopPropagation()"><input type="checkbox" '+(t.done?'checked':'')+' onchange="tt('+i+')"><span class="cb-box">&#10003;</span></span>'+
     '<span class="priority-dot '+(t.pr||'medium')+'"></span>'+
     '<span class="task-info"><div class="task-title-text">'+esc(t.nm||'未命名')+'</div>'+
@@ -716,11 +771,16 @@ function subHtml(s,ti,si){
       r+='<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button>';
       r+='<button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button>';
     }else if(selfAssign){
-      if(s.pom){if(s.prun){let rem=calcRem(s);r+='<span class="pomo-timer running" id="stpt_'+ti+'_'+si+'">'+fmtTime(rem)+'</span>'}else r+='<button class="btn btn-xs btn-orange" onclick="event.stopPropagation();startPomo('+ti+','+si+')">▶ '+pomoLabel()+'</button>';r+='<span class="tag tag-pomo">'+(s.pc||0)+'</span>'}
-      r+='<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button>';
-      r+='<button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button>';
-      r+='<button class="btn btn-xs" onclick="event.stopPropagation();ds('+ti+','+si+')">✕</button>';
-    }else if(isManager()){
+      if(isManager()){
+        if(s.pom){if(s.prun){let rem=calcRem(s);r+='<span class="pomo-timer running" id="stpt_'+ti+'_'+si+'">'+fmtTime(rem)+'</span>'}else r+='<button class="btn btn-xs btn-orange" onclick="event.stopPropagation();startPomo('+ti+','+si+')">▶ '+pomoLabel()+'</button>';r+='<span class="tag tag-pomo">'+(s.pc||0)+'</span>'}
+        r+='<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button>';
+        r+='<button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button>';
+        r+='<button class="btn btn-xs" onclick="event.stopPropagation();ds('+ti+','+si+')">✕</button>';
+      }else{
+        r+='<button class="btn btn-xs btn-blue" onclick="event.stopPropagation();joinSub('+ti+','+si+')">加入</button>';
+        r+='<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button>';
+      }
+}else if(isManager()){
       r+='<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button>';
       r+='<button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button>';
       r+='<button class="btn btn-xs" onclick="event.stopPropagation();ds('+ti+','+si+')">✕</button>';
@@ -975,11 +1035,16 @@ function startTimer(){
 }
 function stopPomo(s){s.prun=false;s.pstart=0}
 
-function dragStart(e,i){dragIdx=i;let card=document.getElementById('tcard_'+i);if(card)card.classList.add('dragging');e.dataTransfer.effectAllowed='move'}
-function dragOver(e,i){e.preventDefault();if(i===dragIdx)return;let card=document.getElementById('tcard_'+i);if(card)card.classList.add('drag-target')}
-function dragLeave(e,i){let card=document.getElementById('tcard_'+i);if(card)card.classList.remove('drag-target')}
-function dragEnd(e){document.querySelectorAll('.task-card').forEach(c=>c.classList.remove('dragging','drag-target'));dragIdx=-1}
-function drop(e,i){e.preventDefault();document.querySelectorAll('.task-card').forEach(c=>c.classList.remove('dragging','drag-target'));if(i===dragIdx||dragIdx<0)return;let item=tsks.splice(dragIdx,1)[0];tsks.splice(i,0,item);dragIdx=-1;svs();rdr()}
+function moveProjectUp(i){
+  if(i<=0||!tsks[i])return;
+  var tmp=tsks[i];tsks[i]=tsks[i-1];tsks[i-1]=tmp;
+  svs();rdr();renderFocus()
+}
+function moveProjectDown(i){
+  if(i>=tsks.length-1||!tsks[i])return;
+  var tmp=tsks[i];tsks[i]=tsks[i+1];tsks[i+1]=tmp;
+  svs();rdr();renderFocus()
+}
 
 var subDrTi=-1,subDrSi=-1,subDrEl=null,subDrX=0,subDrY=0,subDrOffX=0,subDrOffY=0,subDrGhost=null,subDrMoved=false,subDrHover=null;
 function initSubDrag(){
@@ -1149,7 +1214,7 @@ function imp(){
   var inp=document.createElement('input');inp.type='file';inp.accept='.json';
   inp.onchange=function(){var f=this.files[0];if(!f)return;var r=new FileReader();
     r.onload=function(){try{var d=JSON.parse(r.result);if(!Array.isArray(d))throw new Error();
-      if(isManager()){showImportModeChooser(d)}else{mergeImport(d)}
+      showImportModeChooser(d);
     }catch(e){alert('导入失败：文件格式不正确')}};
     r.readAsText(f)
   };inp.click()
@@ -1242,8 +1307,9 @@ function renderFocus(){
 function focusCard(item){
   var s=item.s,ti=item.ti,si=item.si,type=item.type,prj=item.prj||'',q=item.q,idx=item.idx;
   var qc=' q'+q,subTag=(type==='submitted'?' focus-submitted':'');
-  return'<div class="focus-card'+qc+subTag+'" data-q="'+q+'" data-idx="'+idx+'" data-ti="'+ti+'" data-si="'+si+'" draggable="true" ondragstart="focusDragStart(event,'+q+','+idx+')" ondragover="focusDragOver(event,'+q+','+idx+')" ondragleave="focusDragLeave(event)" ondrop="focusDrop(event,'+q+','+idx+')" ondragend="focusDragEnd(event)">'+
-    '<span class="fn"><div class="focus-name">'+esc(s.nm)+(type==='submitted'?'<span style="color:#fbbf24;font-size:.58rem;margin-left:6px">已提交</span>':'')+'</div>'+
+  return'<div class="focus-card'+qc+subTag+'" data-q="'+q+'" data-idx="'+idx+'" data-ti="'+ti+'" data-si="'+si+'" onclick="event.stopPropagation();openGantaPopup('+ti+','+si+')">'+
+    '<span class="sort-arrows"><button class="sort-arrow" onclick="event.stopPropagation();moveFocusUp('+ti+','+si+')" title="上移">▲</button><button class="sort-arrow" onclick="event.stopPropagation();moveFocusDown('+ti+','+si+')" title="下移">▼</button></span>'+
+    '<span class="fn"><div class="focus-name">'+esc(s.nm)+(type==='submitted'?'<span style="color:#fbbf24;font-size:.58rem;margin-left:4px">已提交</span>':'')+'</div>'+
     (prj?'<div class="focus-prj">← '+esc(prj)+'</div>':'')+
     (s.et?'<div class="focus-meta">'+esc(s.et)+'</div>':'')+'</span>'+
     '<span class="fa">'+
@@ -1277,65 +1343,73 @@ function quickAssign(ti,si,name){
   svs();rdr();renderFocus();
 }
 function toggleFocusPom(ti,si,val){tsks[ti].sb[si].pom=val;svs();rdr();renderFocus()}
-var focusDragIdx=-1,focusDragQ=-1,focusDragTi=-1,focusDragSi=-1;
-function focusDragStart(e,q,idx){
-  var card=e.currentTarget;
-  focusDragIdx=idx;focusDragQ=q;
-  focusDragTi=parseInt(card.dataset.ti);
-  focusDragSi=parseInt(card.dataset.si);
-  card.classList.add('dragging');e.dataTransfer.effectAllowed='move'
+
+function moveFocusUp(ti,si){
+  if(!tsks[ti]||!tsks[ti].sb||si<=0)return;
+  var arr=tsks[ti].sb;
+  var tmp=arr[si];arr[si]=arr[si-1];arr[si-1]=tmp;
+  svs();rdr();renderFocus()
 }
-function focusDragOver(e,q,idx){
-  e.preventDefault();
-  if(q===focusDragQ&&idx===focusDragIdx)return;
-  e.currentTarget.classList.add('drag-target')
+function moveFocusDown(ti,si){
+  if(!tsks[ti]||!tsks[ti].sb||si>=tsks[ti].sb.length-1)return;
+  var arr=tsks[ti].sb;
+  var tmp=arr[si];arr[si]=arr[si+1];arr[si+1]=tmp;
+  svs();rdr();renderFocus()
 }
-function focusDragLeave(e){e.currentTarget.classList.remove('drag-target')}
-function focusDragEnd(e){
-  document.querySelectorAll('.focus-card').forEach(function(c){c.classList.remove('dragging','drag-target')});
-  focusDragIdx=-1;focusDragQ=-1
+
+var gantaTi=-1,gantaSi=-1,gantaTimer=null,gantaSec=0;
+function openGantaPopup(ti,si){
+  var s=tsks[ti].sb[si];if(!s)return;
+  gantaTi=ti;gantaSi=si;
+  document.getElementById('gpName').textContent=s.nm||'未命名';
+  document.getElementById('gpPrj').textContent='← '+(tsks[ti].nm||'');
+  document.getElementById('gantaPopup').classList.add('show')
 }
-function focusDrop(e,q,idx){
-  e.preventDefault();
-  document.querySelectorAll('.focus-card').forEach(function(c){c.classList.remove('dragging','drag-target')});
-  if(focusDragIdx<0)return;
-  if(q===focusDragQ&&idx!==focusDragIdx){
-    reorderFocus(q,idx)
+function closeGantaPopup(){
+  document.getElementById('gantaPopup').classList.remove('show');
+  gantaTi=-1;gantaSi=-1
+}
+function startGanta(){
+  closeGantaPopup();
+  if(gantaTi<0||gantaSi<0)return;
+  var s=tsks[gantaTi].sb[gantaSi];
+  if(!s)return;
+  gantaSec=(cfg.pomoMins||25)*60;
+  document.getElementById('gantaTime').textContent=fmtTime(gantaSec);
+  document.getElementById('gantaTask').textContent=s.nm||'';
+  document.getElementById('gantaOverlay').classList.add('show');
+  if(gantaTimer)clearInterval(gantaTimer);
+  gantaTimer=setInterval(function(){
+    gantaSec--;if(gantaSec<=0){gantaSec=0;clearInterval(gantaTimer);gantaTimer=null}
+    document.getElementById('gantaTime').textContent=fmtTime(gantaSec)
+  },1000)
+}
+function finishGanta(){
+  if(gantaTimer){clearInterval(gantaTimer);gantaTimer=null}
+  document.getElementById('gantaOverlay').classList.remove('show');
+  if(gantaTi>=0&&gantaSi>=0){
+    var s=tsks[gantaTi].sb[gantaSi];
+    if(s){s.pc=(s.pc||0)+1;svs();rdr();renderFocus()}
   }
-  focusDragIdx=-1;focusDragQ=-1
+  gantaTi=-1;gantaSi=-1
 }
-function reorderFocus(q,idx){
-  if(focusDragIdx<0||focusDragTi<0||focusDragSi<0)return;
-  var card=e2c(q,idx);
-  if(!card)return;
-  var tgi=parseInt(card.dataset.ti);
-  if(focusDragTi!==tgi){
-    var sc=e2c(focusDragQ,focusDragIdx);
-    if(sc){sc.classList.add('blocked');setTimeout(function(){sc.classList.remove('blocked')},450)}
-    focusDragIdx=-1;focusDragQ=-1;return;
-  }
-  var tgsi=parseInt(card.dataset.si);
-  var srcS=tsks[focusDragTi].sb[focusDragSi];
-  var tgtS=tsks[tgi].sb[tgsi];
-  if(!tgtS)return;
-  tsks[focusDragTi].sb.splice(focusDragSi,1);
-  var newIdx=tsks[tgi].sb.indexOf(tgtS);
-  if(newIdx<0)newIdx=tsks[tgi].sb.length;
-  tsks[tgi].sb.splice(newIdx,0,srcS);
-  focusDragIdx=-1;focusDragQ=-1;svs();rdr();renderFocus()
-}
+
 function e2c(q,idx){return document.querySelector('#fqList'+q+' .focus-card[data-idx="'+idx+'"]')}
 
-function quadDragOver(e,q){e.preventDefault();if(q===focusDragQ)return;document.getElementById('fqWrap'+q).classList.add('drag-qover')}
-function quadDragLeave(e,q){document.getElementById('fqWrap'+q).classList.remove('drag-qover')}
-function quadDrop(e,q){
-  e.preventDefault();
-  document.querySelectorAll('.focus-quad').forEach(function(el){el.classList.remove('drag-qover')});
-  if(focusDragIdx<0||focusDragTi<0||focusDragSi<0)return;
-  if(q===focusDragQ){focusDragIdx=-1;focusDragQ=-1;return}
-  tsks[focusDragTi].sb[focusDragSi].quad=q;
-  focusDragIdx=-1;focusDragQ=-1;svs();rdr();renderFocus()
-}
+var focusLongPressTimer=null;
+document.addEventListener('touchstart',function(e){
+  var card=e.target.closest('.focus-card');
+  if(!card){clearLongPress();return}
+  if(e.target.closest('button')||e.target.closest('select')||e.target.closest('input')||e.target.closest('.sort-arrows')){clearLongPress();return}
+  focusLongPressTimer=setTimeout(function(){
+    var ti=parseInt(card.dataset.ti),si=parseInt(card.dataset.si);
+    if(!isNaN(ti)&&!isNaN(si))openGantaPopup(ti,si);
+    focusLongPressTimer=null
+  },600)
+},{passive:true});
+document.addEventListener('touchend',clearLongPress);
+document.addEventListener('touchmove',clearLongPress);
+function clearLongPress(){if(focusLongPressTimer){clearTimeout(focusLongPressTimer);focusLongPressTimer=null}}
 
 function openTeamMgmt(){if(!isManager())return;document.getElementById('tmMgName').textContent='团队管理 - 深东';rdrTeamList();document.getElementById('tm').classList.add('show')}
 function closeTeamMgmt(){document.getElementById('tm').classList.remove('show');ldCfg();updateHeaders();rdr();renderFocus()}
@@ -1442,7 +1516,7 @@ function handleDropFiles(files){
   if(!f.name.toLowerCase().endsWith('.json')){alert('仅支持导入 .json 格式文件');return}
   var r=new FileReader();
   r.onload=function(){try{var d=JSON.parse(r.result);if(!Array.isArray(d))throw new Error();
-    if(isManager()){showImportModeChooser(d)}else{mergeImport(d)}
+    showImportModeChooser(d);
   }catch(e){alert('导入失败：文件格式不正确')}};
   r.readAsText(f)
 }
