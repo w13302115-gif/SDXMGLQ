@@ -228,7 +228,7 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 </head>
 <body>
 
-<div class="login-wrap" id="loginWrap" style="display:none">
+<div class="login-wrap" id="loginWrap">
 <div class="login-card">
 <h1>深东项目管理器</h1>
 <div class="sub">专注 · 协作 · 高效</div>
@@ -1433,11 +1433,18 @@ document.addEventListener('drop',function(e){
   let files=e.dataTransfer.files;if(files&&files.length)handleDropFiles(files)
 });
 
-initSubDrag();
-ldCfg();popLoginNames();onLoginSel();
-let stored=localStorage.getItem(KEY_I);
-if(stored&&stored===cfg.manager){me=stored;showApp()}else if(stored&&getPwdFor(stored)!==undefined){
-  let sh=getPwdFor(stored);if(!sh){me=stored;showApp()}else{document.getElementById('loginWrap').style.display='flex';document.getElementById('loginSel').value=stored}
-}else{document.getElementById('loginWrap').style.display='flex'}</script>
+try{initSubDrag()}catch(e){}
+try{ldCfg()}catch(e){cfg=defaultCfg()}
+try{popLoginNames()}catch(e){}
+try{onLoginSel()}catch(e){}
+var stored=localStorage.getItem(KEY_I);
+var autoLoginDone=false;
+try{
+  if(stored&&cfg&&cfg.manager&&stored===cfg.manager){me=stored;showApp();autoLoginDone=true}
+  else if(stored&&getPwdFor(stored)!==undefined){
+    var sh=getPwdFor(stored);if(!sh){me=stored;showApp();autoLoginDone=true}else{document.getElementById('loginSel').value=stored}
+  }
+}catch(e){}
+if(!autoLoginDone){try{document.getElementById('loginWrap').style.display='flex'}catch(e){}}</script>
 </body>
 </html>
