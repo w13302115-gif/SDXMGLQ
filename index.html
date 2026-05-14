@@ -229,6 +229,7 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 <body>
 
 <div class="login-wrap" id="loginWrap">
+<noscript><div style="text-align:center;padding:20px;color:#f87171;font-size:1rem">⚠ JavaScript 未启用，请开启后刷新</div></noscript>
 <div class="login-card">
 <h1>深东项目管理器</h1>
 <div class="sub">专注 · 协作 · 高效</div>
@@ -417,6 +418,21 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 <div style="font-size:.72rem;color:#ccc;margin-top:4px">将下载栏的文件<strong style="color:#5b8def">拖入微信聊天框</strong>即可发送</div>
 </div>
 <button class="btn" onclick="closeExportDlg()" style="width:100%">关闭</button>
+</div>
+</div>
+
+<div class="modal-bg" id="importDlg">
+<div class="modal-box" style="text-align:center;max-width:380px">
+<div style="font-size:2rem;margin-bottom:10px">📥</div>
+<h3 style="margin-bottom:8px">导入 JSON 数据</h3>
+<div style="font-size:.75rem;color:#888;margin-bottom:20px">请选择导入方式</div>
+<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+<button class="btn btn-primary" onclick="doOverwriteOrMerge('overwrite')" style="padding:12px 28px">🔄 覆盖导入</button>
+<button class="btn" onclick="doOverwriteOrMerge('merge')" style="padding:12px 28px">📎 合并导入</button>
+</div>
+<div style="font-size:.62rem;color:#f87171;margin-top:14px">覆盖导入会清空当前所有数据</div>
+<div style="display:none" id="importDlgData"></div>
+<button class="btn" onclick="document.getElementById('importDlg').style.display='none'" style="margin-top:14px;width:100%">取消</button>
 </div>
 </div>
 
@@ -1133,10 +1149,28 @@ function imp(){
   var inp=document.createElement('input');inp.type='file';inp.accept='.json';
   inp.onchange=function(){var f=this.files[0];if(!f)return;var r=new FileReader();
     r.onload=function(){try{var d=JSON.parse(r.result);if(!Array.isArray(d))throw new Error();
-      mergeImport(d);
+      if(isManager()){showImportModeChooser(d)}else{mergeImport(d)}
     }catch(e){alert('导入失败：文件格式不正确')}};
     r.readAsText(f)
   };inp.click()
+}
+
+function showImportModeChooser(data){
+  document.getElementById('importDlgData')._data=data;
+  document.getElementById('importDlg').style.display='flex'
+}
+function doOverwriteOrMerge(mode){
+  var data=document.getElementById('importDlgData')._data;
+  document.getElementById('importDlg').style.display='none';
+  if(!data)return;
+  if(mode==='overwrite'){
+    var norm=function(s){if(s.assignedTo&&!s.assignees){s.assignees=[s.assignedTo];delete s.assignedTo}};
+    data.forEach(function(t){if(t.sb)t.sb.forEach(norm)});
+    tsks=data;svs();rdr();renderFocus();
+    alert('覆盖导入完成！\n共 '+tsks.length+' 个项目')
+  }else{
+    mergeImport(data)
+  }
 }
 function mergeImport(data){
   var norm=function(s){if(s.assignedTo&&!s.assignees){s.assignees=[s.assignedTo];delete s.assignedTo}};
@@ -1408,12 +1442,14 @@ function handleDropFiles(files){
   if(!f.name.toLowerCase().endsWith('.json')){alert('仅支持导入 .json 格式文件');return}
   var r=new FileReader();
   r.onload=function(){try{var d=JSON.parse(r.result);if(!Array.isArray(d))throw new Error();
-    mergeImport(d);
+    if(isManager()){showImportModeChooser(d)}else{mergeImport(d)}
   }catch(e){alert('导入失败：文件格式不正确')}};
   r.readAsText(f)
 }
 
+try{
 let dropOverlay=document.getElementById('dropOverlay');
+if(dropOverlay){
 document.addEventListener('dragenter',function(e){
   e.preventDefault();
   if(!me)return;
@@ -1432,6 +1468,8 @@ document.addEventListener('drop',function(e){
   e.preventDefault();dropOverlay.classList.remove('show','active');
   let files=e.dataTransfer.files;if(files&&files.length)handleDropFiles(files)
 });
+}
+}catch(e){}
 
 try{initSubDrag()}catch(e){}
 try{ldCfg()}catch(e){cfg=defaultCfg()}
