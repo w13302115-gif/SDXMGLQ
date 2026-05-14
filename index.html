@@ -334,10 +334,10 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 </div>
 </div>
 <div class="focus-grid" id="focusGrid">
-<div class="focus-quad" id="fqWrap0"><div class="fq-title fq-q0">🔴 重要+紧急</div><div class="focus-list" id="fqList0"></div></div>
-<div class="focus-quad" id="fqWrap1"><div class="fq-title fq-q1">🟡 重要+不紧急</div><div class="focus-list" id="fqList1"></div></div>
-<div class="focus-quad" id="fqWrap2"><div class="fq-title fq-q2">🟠 不重要+紧急</div><div class="focus-list" id="fqList2"></div></div>
-<div class="focus-quad" id="fqWrap3"><div class="fq-title fq-q3">🟢 不重要+不紧急</div><div class="focus-list" id="fqList3"></div></div>
+<div class="focus-quad" id="fqWrap0" ondragover="quadDragOver(event,0)" ondragleave="quadDragLeave(event,0)" ondrop="quadDrop(event,0)"><div class="fq-title fq-q0">🔴 重要+紧急</div><div class="focus-list" id="fqList0"></div></div>
+<div class="focus-quad" id="fqWrap1" ondragover="quadDragOver(event,1)" ondragleave="quadDragLeave(event,1)" ondrop="quadDrop(event,1)"><div class="fq-title fq-q1">🟡 重要+不紧急</div><div class="focus-list" id="fqList1"></div></div>
+<div class="focus-quad" id="fqWrap2" ondragover="quadDragOver(event,2)" ondragleave="quadDragLeave(event,2)" ondrop="quadDrop(event,2)"><div class="fq-title fq-q2">🟠 不重要+紧急</div><div class="focus-list" id="fqList2"></div></div>
+<div class="focus-quad" id="fqWrap3" ondragover="quadDragOver(event,3)" ondragleave="quadDragLeave(event,3)" ondrop="quadDrop(event,3)"><div class="fq-title fq-q3">🟢 不重要+不紧急</div><div class="focus-list" id="fqList3"></div></div>
 </div>
 <div class="focus-empty" id="focusEmpty">
 <div class="big-icon">✨</div>
@@ -654,8 +654,7 @@ function cd(t,i){
   if(myPending>0)capt+='<span style="color:var(--green);font-weight:600">我:'+myPending+'</span>';
   let dlyTag=t.dl?'<span class="tag tag-daily">每日</span>':'';
   let privTag=t.private?'<span class="tag tag-private">个人待办</span>':'';
-  return '<div class="task-card'+cc+'" id="tcard_'+i+'"><div class="task-row" onclick="te('+i+')">'+
-    '<span class="sort-arrows"><button class="sort-arrow" onclick="event.stopPropagation();moveProjectUp('+i+')" title="上移">▲</button><button class="sort-arrow" onclick="event.stopPropagation();moveProjectDown('+i+')" title="下移">▼</button></span>'+
+  return '<div class="task-card'+cc+'" id="tcard_'+i+'"><div class="task-row" draggable="true" ondragstart="dragStart(event,'+i+')" ondragover="dragOver(event,'+i+')" ondragleave="dragLeave(event,'+i+')" ondrop="drop(event,'+i+')" ondragend="dragEnd(event)" onclick="te('+i+')">'+
     '<span class="cb-wrap" onclick="event.stopPropagation()"><input type="checkbox" '+(t.done?'checked':'')+' onchange="tt('+i+')"><span class="cb-box">&#10003;</span></span>'+
     '<span class="priority-dot '+(t.pr||'medium')+'"></span>'+
     '<span class="task-info"><div class="task-title-text">'+esc(t.nm||'未命名')+'</div>'+
@@ -1037,16 +1036,11 @@ function startTimer(){
 }
 function stopPomo(s){s.prun=false;s.pstart=0}
 
-function moveProjectUp(i){
-  if(i<=0||!tsks[i])return;
-  var tmp=tsks[i];tsks[i]=tsks[i-1];tsks[i-1]=tmp;
-  svs();rdr();renderFocus()
-}
-function moveProjectDown(i){
-  if(i>=tsks.length-1||!tsks[i])return;
-  var tmp=tsks[i];tsks[i]=tsks[i+1];tsks[i+1]=tmp;
-  svs();rdr();renderFocus()
-}
+function dragStart(e,i){dragIdx=i;let card=document.getElementById('tcard_'+i);if(card)card.classList.add('dragging');e.dataTransfer.effectAllowed='move'}
+function dragOver(e,i){e.preventDefault();if(i===dragIdx)return;let card=document.getElementById('tcard_'+i);if(card)card.classList.add('drag-target')}
+function dragLeave(e,i){let card=document.getElementById('tcard_'+i);if(card)card.classList.remove('drag-target')}
+function dragEnd(e){document.querySelectorAll('.task-card').forEach(c=>c.classList.remove('dragging','drag-target'));dragIdx=-1}
+function drop(e,i){e.preventDefault();document.querySelectorAll('.task-card').forEach(c=>c.classList.remove('dragging','drag-target'));if(i===dragIdx||dragIdx<0)return;let item=tsks.splice(dragIdx,1)[0];tsks.splice(i,0,item);dragIdx=-1;svs();rdr()}
 
 var subDrTi=-1,subDrSi=-1,subDrEl=null,subDrX=0,subDrY=0,subDrOffX=0,subDrOffY=0,subDrGhost=null,subDrMoved=false,subDrHover=null;
 function initSubDrag(){
@@ -1309,8 +1303,7 @@ function renderFocus(){
 function focusCard(item){
   var s=item.s,ti=item.ti,si=item.si,type=item.type,prj=item.prj||'',q=item.q,idx=item.idx;
   var qc=' q'+q,subTag=(type==='submitted'?' focus-submitted':'');
-  return'<div class="focus-card'+qc+subTag+'" data-q="'+q+'" data-idx="'+idx+'" data-ti="'+ti+'" data-si="'+si+'" onclick="event.stopPropagation();openGantaPopup('+ti+','+si+')">'+
-    '<span class="sort-arrows"><button class="sort-arrow" onclick="event.stopPropagation();moveFocusUp('+ti+','+si+')" title="上移">▲</button><button class="sort-arrow" onclick="event.stopPropagation();moveFocusDown('+ti+','+si+')" title="下移">▼</button></span>'+
+  return'<div class="focus-card'+qc+subTag+'" data-q="'+q+'" data-idx="'+idx+'" data-ti="'+ti+'" data-si="'+si+'" draggable="true" ondragstart="focusDragStart(event,'+q+','+idx+')" ondragover="focusDragOver(event,'+q+','+idx+')" ondragleave="focusDragLeave(event)" ondrop="focusDrop(event,'+q+','+idx+')" ondragend="focusDragEnd(event)" onclick="event.stopPropagation();openGantaPopup('+ti+','+si+')">'+
     '<span class="fn"><div class="focus-name">'+esc(s.nm)+(type==='submitted'?'<span style="color:#fbbf24;font-size:.58rem;margin-left:4px">已提交</span>':'')+'</div>'+
     (prj?'<div class="focus-prj">← '+esc(prj)+'</div>':'')+
     (s.et?'<div class="focus-meta">'+esc(s.et)+'</div>':'')+'</span>'+
@@ -1346,17 +1339,64 @@ function quickAssign(ti,si,name){
 }
 function toggleFocusPom(ti,si,val){tsks[ti].sb[si].pom=val;svs();rdr();renderFocus()}
 
-function moveFocusUp(ti,si){
-  if(!tsks[ti]||!tsks[ti].sb||si<=0)return;
-  var arr=tsks[ti].sb;
-  var tmp=arr[si];arr[si]=arr[si-1];arr[si-1]=tmp;
-  svs();rdr();renderFocus()
+var focusDragIdx=-1,focusDragQ=-1,focusDragTi=-1,focusDragSi=-1;
+function focusDragStart(e,q,idx){
+  var card=e.currentTarget;
+  focusDragIdx=idx;focusDragQ=q;
+  focusDragTi=parseInt(card.dataset.ti);
+  focusDragSi=parseInt(card.dataset.si);
+  card.classList.add('dragging');e.dataTransfer.effectAllowed='move'
 }
-function moveFocusDown(ti,si){
-  if(!tsks[ti]||!tsks[ti].sb||si>=tsks[ti].sb.length-1)return;
-  var arr=tsks[ti].sb;
-  var tmp=arr[si];arr[si]=arr[si+1];arr[si+1]=tmp;
-  svs();rdr();renderFocus()
+function focusDragOver(e,q,idx){
+  e.preventDefault();
+  if(q===focusDragQ&&idx===focusDragIdx)return;
+  e.currentTarget.classList.add('drag-target')
+}
+function focusDragLeave(e){e.currentTarget.classList.remove('drag-target')}
+function focusDragEnd(e){
+  document.querySelectorAll('.focus-card').forEach(function(c){c.classList.remove('dragging','drag-target')});
+  focusDragIdx=-1;focusDragQ=-1
+}
+function focusDrop(e,q,idx){
+  e.preventDefault();
+  document.querySelectorAll('.focus-card').forEach(function(c){c.classList.remove('dragging','drag-target')});
+  if(focusDragIdx<0)return;
+  if(q===focusDragQ&&idx!==focusDragIdx){
+    reorderFocus(q,idx)
+  }
+  focusDragIdx=-1;focusDragQ=-1
+}
+function reorderFocus(q,idx){
+  if(focusDragIdx<0||focusDragTi<0||focusDragSi<0)return;
+  var card=e2c(q,idx);
+  if(!card)return;
+  var tgi=parseInt(card.dataset.ti);
+  if(focusDragTi!==tgi){
+    var sc=e2c(focusDragQ,focusDragIdx);
+    if(sc){sc.classList.add('blocked');setTimeout(function(){sc.classList.remove('blocked')},450)}
+    focusDragIdx=-1;focusDragQ=-1;return;
+  }
+  var tgsi=parseInt(card.dataset.si);
+  var srcS=tsks[focusDragTi].sb[focusDragSi];
+  var tgtS=tsks[tgi].sb[tgsi];
+  if(!tgtS)return;
+  tsks[focusDragTi].sb.splice(focusDragSi,1);
+  var newIdx=tsks[tgi].sb.indexOf(tgtS);
+  if(newIdx<0)newIdx=tsks[tgi].sb.length;
+  tsks[tgi].sb.splice(newIdx,0,srcS);
+  focusDragIdx=-1;focusDragQ=-1;svs();rdr();renderFocus()
+}
+function e2c(q,idx){return document.querySelector('#fqList'+q+' .focus-card[data-idx="'+idx+'"]')}
+
+function quadDragOver(e,q){e.preventDefault();if(q===focusDragQ)return;document.getElementById('fqWrap'+q).classList.add('drag-qover')}
+function quadDragLeave(e,q){document.getElementById('fqWrap'+q).classList.remove('drag-qover')}
+function quadDrop(e,q){
+  e.preventDefault();
+  document.querySelectorAll('.focus-quad').forEach(function(el){el.classList.remove('drag-qover')});
+  if(focusDragIdx<0||focusDragTi<0||focusDragSi<0)return;
+  if(q===focusDragQ){focusDragIdx=-1;focusDragQ=-1;return}
+  tsks[focusDragTi].sb[focusDragSi].quad=q;
+  focusDragIdx=-1;focusDragQ=-1;svs();rdr();renderFocus()
 }
 
 var gantaTi=-1,gantaSi=-1,gantaTimer=null,gantaSec=0;
@@ -1395,23 +1435,6 @@ function finishGanta(){
   }
   gantaTi=-1;gantaSi=-1
 }
-
-function e2c(q,idx){return document.querySelector('#fqList'+q+' .focus-card[data-idx="'+idx+'"]')}
-
-var focusLongPressTimer=null;
-document.addEventListener('touchstart',function(e){
-  var card=e.target.closest('.focus-card');
-  if(!card){clearLongPress();return}
-  if(e.target.closest('button')||e.target.closest('select')||e.target.closest('input')||e.target.closest('.sort-arrows')){clearLongPress();return}
-  focusLongPressTimer=setTimeout(function(){
-    var ti=parseInt(card.dataset.ti),si=parseInt(card.dataset.si);
-    if(!isNaN(ti)&&!isNaN(si))openGantaPopup(ti,si);
-    focusLongPressTimer=null
-  },600)
-},{passive:true});
-document.addEventListener('touchend',clearLongPress);
-document.addEventListener('touchmove',clearLongPress);
-function clearLongPress(){if(focusLongPressTimer){clearTimeout(focusLongPressTimer);focusLongPressTimer=null}}
 
 function openTeamMgmt(){if(!isManager())return;document.getElementById('tmMgName').textContent='团队管理 - 深东';rdrTeamList();document.getElementById('tm').classList.add('show')}
 function closeTeamMgmt(){document.getElementById('tm').classList.remove('show');ldCfg();updateHeaders();rdr();renderFocus()}
