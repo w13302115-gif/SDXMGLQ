@@ -216,8 +216,6 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
   .header{padding:10px 14px}
   .task-row{padding:10px 12px;gap:6px}
   .btn{font-size:.68rem;padding:5px 10px}
-  .ganta-overlay .ganta-time{font-size:4rem}
-  .ganta-overlay .ganta-btn{width:100px;height:100px;font-size:2rem}
 }
 
 .pomo-overlay{position:fixed;inset:0;background:rgba(10,10,18,.95);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:990}
@@ -239,13 +237,6 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 .mini-pomo .mini-task{font-size:.7rem;color:var(--muted);text-align:center;margin-top:6px}
 .mini-pomo .mini-close{position:absolute;top:6px;right:10px;background:none;border:none;color:#555;cursor:pointer;font-size:1rem}
 
-.ganta-overlay{position:fixed;inset:0;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:1000}
-.ganta-overlay.show{display:flex}
-.ganta-overlay .ganta-time{font-size:6rem;font-weight:300;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:4px;margin-bottom:20px}
-.ganta-overlay .ganta-task{font-size:1rem;color:#555;max-width:80%;text-align:center;margin-bottom:30px}
-.ganta-overlay .ganta-btn{width:140px;height:140px;border-radius:50%;border:2px solid #34d399;background:rgba(52,211,153,.1);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:3rem;color:#34d399;transition:all .2s}
-.ganta-overlay .ganta-btn:active{background:rgba(52,211,153,.3);transform:scale(.95)}
-.ganta-overlay .ganta-close{position:fixed;bottom:30px;right:30px;width:40px;height:40px;border:1px solid #333;border-radius:50%;background:#111;color:#555;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem}
 .ganta-popup{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:1001;flex-direction:column}
 .ganta-popup.show{display:flex}
 .ganta-popup .gp-card{background:var(--card);border:1px solid #333;border-radius:16px;padding:24px 20px;text-align:center;max-width:280px;width:90%}
@@ -300,6 +291,7 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 <span class="uname" id="hdrName"></span>
 <span class="role-badge" id="hdrRole" style="font-size:.6rem;padding:2px 7px;border-radius:3px;font-weight:600"></span>
 </div>
+<span id="syncIcon" style="cursor:help;font-size:1rem;margin-right:6px;color:var(--muted)" title="同步状态">○</span>
 <button class="btn btn-sm" onclick="openTeamMgmt()" id="btnTeam" style="display:none">👥</button>
 <button class="btn btn-sm" onclick="openSettings()">⚙ 设置</button>
 <button class="btn btn-sm btn-danger" onclick="logout()">退出</button>
@@ -428,6 +420,16 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 <div style="color:var(--muted);font-size:.65rem;margin-top:6px" id="repairMsg">如果子任务错位，请先导出备份，然后在看板中手动调整</div>
 </div>
 
+<div class="sec">
+<div class="fld"><label>🌐 Gist自动同步</label></div>
+<div class="fld"><label>Token（<span style="color:var(--yellow)">需手动输入，不会上传到GitHub仓库</span>）</label><input id="stGistToken" type="password" placeholder="ghp_..."></div>
+<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;align-items:center">
+<button class="btn btn-sm btn-primary" onclick="saveGistToken()">保存Token</button>
+<span id="stGistStatus" style="font-size:.65rem;color:var(--muted)"></span>
+</div>
+<div style="font-size:.6rem;color:#666;margin-top:4px">在 ⚙设置 → 同步设置 中输入Token后可实现多端自动同步</div>
+</div>
+
 <div class="mb"><button class="btn" onclick="closeSettings()">关闭</button></div>
 </div>
 </div>
@@ -507,18 +509,13 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 </div>
 </div>
 
-<div class="ganta-overlay" id="gantaOverlay">
-<div class="ganta-time" id="gantaTime">25:00</div>
-<div class="ganta-task" id="gantaTask"></div>
-<button class="ganta-btn" onclick="finishGanta()">✓</button>
-<button class="ganta-close" onclick="finishGanta()">✕</button>
-</div>
-
 <script>
 window.onerror=function(m,s,l,c,e){try{var el=document.getElementById('debugErr');el.style.display='block';el.textContent+='ERR: '+m+' ['+s+':'+l+']\n'}catch(x){};return false};
 const KEY_T='xl_tm_tasks',KEY_C='xl_tm_cfg',KEY_I='xl_tm_identity';
 let tsks=[],cfg={},me='',ei=-1,dragIdx=-1,curView=1;
 var pomoTask=null,timerId=null,expFolderHandle=null,activePomos={},showAddSubFor={};
+var GIST_ID='92506ea1191f416cac4b92081ea37c2a',GIST_FILE='shen_dong_data.json',syncStatus='idle',syncTimer=null,lastGistVer='',pushTimer=null;
+function getGistToken(){return cfg.gistToken||''}
 
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
 function esc(s){if(!s)return'';let d=document.createElement('div');d.textContent=s;return d.innerHTML}
@@ -597,7 +594,7 @@ function logout(){me='';localStorage.removeItem(KEY_I);document.getElementById('
 function showApp(){
   document.getElementById('loginWrap').style.display='none';document.getElementById('appWrap').style.display='block';
   document.getElementById('td').textContent=tdy();document.getElementById('focusDate').textContent=tdy();
-  updateHeaders();ldTasks();rdr();renderFocus()
+  updateHeaders();ldTasks();rdr();renderFocus();startAutoSync()
 }
 
 let DEF_HASH='';
@@ -637,7 +634,7 @@ function ldTasks(){
   });
   svs()
 }
-function svs(){localStorage.setItem(KEY_T,JSON.stringify(tsks))}
+function svs(){localStorage.setItem(KEY_T,JSON.stringify(tsks));schedulePush()}
 
 function rdr(){
   let c=document.getElementById('ts'),h=document.getElementById('eh');
@@ -966,13 +963,12 @@ function sv(){
   else tsks.push({id:genId(),nm:n,et,pr,de,done:false,at:'',sb:[],exp:false,dl,lcd:'',private:false});svs();rdr();renderFocus();cls()
 }
 
-function startPomo(ti,si){
+function startPomo(ti,si,forceBig){
   let s=tsks[ti].sb[si];
   if(s.done||(s.assignees&&s.assignees.length&&!isInAssignees(s,me)))return;
   if(isInAssignees(s,me)&&s.status==='submitted')return;
-  if(!('Notification'in window))return;if(Notification.permission==='default')Notification.requestPermission();
   s.prun=true;s.pstart=Date.now();pomoTask={ti,si};svs();rdr();renderFocus();
-  if(curView===2){showMiniPomo()}else{showPomoOverlay()};startTimer()
+  if(forceBig||curView!==2){showPomoOverlay()}else{showMiniPomo()};startTimer()
 }
 function showPomoOverlay(){
   let o=document.getElementById('pomoOverlay');o.classList.add('show');
@@ -1303,7 +1299,7 @@ function renderFocus(){
 function focusCard(item){
   var s=item.s,ti=item.ti,si=item.si,type=item.type,prj=item.prj||'',q=item.q,idx=item.idx;
   var qc=' q'+q,subTag=(type==='submitted'?' focus-submitted':'');
-  return'<div class="focus-card'+qc+subTag+'" data-q="'+q+'" data-idx="'+idx+'" data-ti="'+ti+'" data-si="'+si+'" draggable="true" ondragstart="focusDragStart(event,'+q+','+idx+')" ondragover="focusDragOver(event,'+q+','+idx+')" ondragleave="focusDragLeave(event)" ondrop="focusDrop(event,'+q+','+idx+')" ondragend="focusDragEnd(event)" onclick="event.stopPropagation();openGantaPopup('+ti+','+si+')">'+
+  return'<div class="focus-card'+qc+subTag+'" data-q="'+q+'" data-idx="'+idx+'" data-ti="'+ti+'" data-si="'+si+'" onclick="event.stopPropagation();openGantaPopup('+ti+','+si+')">'+
     '<span class="fn"><div class="focus-name">'+esc(s.nm)+(type==='submitted'?'<span style="color:#fbbf24;font-size:.58rem;margin-left:4px">已提交</span>':'')+'</div>'+
     (prj?'<div class="focus-prj">← '+esc(prj)+'</div>':'')+
     (s.et?'<div class="focus-meta">'+esc(s.et)+'</div>':'')+'</span>'+
@@ -1399,41 +1395,29 @@ function quadDrop(e,q){
   focusDragIdx=-1;focusDragQ=-1;svs();rdr();renderFocus()
 }
 
-var gantaTi=-1,gantaSi=-1,gantaTimer=null,gantaSec=0;
+var gantaTi=-1,gantaSi=-1;
 function openGantaPopup(ti,si){
-  var s=tsks[ti].sb[si];if(!s)return;
-  gantaTi=ti;gantaSi=si;
-  document.getElementById('gpName').textContent=s.nm||'未命名';
-  document.getElementById('gpPrj').textContent='← '+(tsks[ti].nm||'');
-  document.getElementById('gantaPopup').classList.add('show')
+  try{
+    var s=tsks[ti]&&tsks[ti].sb?tsks[ti].sb[si]:null;
+    gantaTi=ti;gantaSi=si;
+    var gp=document.getElementById('gantaPopup');
+    if(!gp){return}
+    document.getElementById('gpName').textContent=(s&&s.nm)||'未命名';
+    document.getElementById('gpPrj').textContent='← '+((tsks[ti]&&tsks[ti].nm)||'');
+    gp.classList.add('show')
+  }catch(e){alert('弹窗错误: '+e.message)}
 }
 function closeGantaPopup(){
   document.getElementById('gantaPopup').classList.remove('show');
   gantaTi=-1;gantaSi=-1
 }
 function startGanta(){
-  closeGantaPopup();
-  if(gantaTi<0||gantaSi<0)return;
-  var s=tsks[gantaTi].sb[gantaSi];
-  if(!s)return;
-  gantaSec=(cfg.pomoMins||25)*60;
-  document.getElementById('gantaTime').textContent=fmtTime(gantaSec);
-  document.getElementById('gantaTask').textContent=s.nm||'';
-  document.getElementById('gantaOverlay').classList.add('show');
-  if(gantaTimer)clearInterval(gantaTimer);
-  gantaTimer=setInterval(function(){
-    gantaSec--;if(gantaSec<=0){gantaSec=0;clearInterval(gantaTimer);gantaTimer=null}
-    document.getElementById('gantaTime').textContent=fmtTime(gantaSec)
-  },1000)
-}
-function finishGanta(){
-  if(gantaTimer){clearInterval(gantaTimer);gantaTimer=null}
-  document.getElementById('gantaOverlay').classList.remove('show');
-  if(gantaTi>=0&&gantaSi>=0){
-    var s=tsks[gantaTi].sb[gantaSi];
-    if(s){s.pc=(s.pc||0)+1;svs();rdr();renderFocus()}
-  }
-  gantaTi=-1;gantaSi=-1
+  try{
+    var ti=gantaTi,si=gantaSi;
+    closeGantaPopup();
+    if(ti<0||si<0)return;
+    startPomo(ti,si)
+  }catch(e){alert('启动错误: '+e.message)}
 }
 
 function openTeamMgmt(){if(!isManager())return;document.getElementById('tmMgName').textContent='团队管理 - 深东';rdrTeamList();document.getElementById('tm').classList.add('show')}
@@ -1466,10 +1450,20 @@ function openSettings(){
   document.getElementById('stExpName').value=cfg.expName||'深东项目备份';
   document.getElementById('stExpPath').value=cfg.expPath||'浏览器默认下载文件夹';
   document.getElementById('stPrivacy').checked=!!cfg.privacyMode;
+  var tk=cfg.gistToken||'';document.getElementById('stGistToken').value=tk;
+  document.getElementById('stGistStatus').textContent=tk?'✅ 已配置':'⚪ 未配置';
   document.getElementById('st').classList.add('show')
 }
 function savePrivacyToggle(){
   cfg.privacyMode=document.getElementById('stPrivacy').checked;svCfg()
+}
+function saveGistToken(){
+  var tk=document.getElementById('stGistToken').value.trim();
+  if(tk&&!tk.startsWith('ghp_')){document.getElementById('stGistStatus').textContent='❌ Token格式不正确（应以ghp_开头）';document.getElementById('stGistStatus').style.color='var(--red)';return}
+  cfg.gistToken=tk||'';svCfg();
+  document.getElementById('stGistStatus').textContent=tk?'✅ Token已保存':'⚪ 已清除';
+  document.getElementById('stGistStatus').style.color=tk?'var(--green)':'var(--muted)';
+  updateSyncIcon()
 }
 function closeSettings(){
   let en=document.getElementById('stExpName').value.trim();
@@ -1532,6 +1526,46 @@ function savePomoSettings(){
   let en=document.getElementById('stExpName').value.trim();if(en)cfg.expName=en;
   savePrivacyToggle();svCfg();rdr();renderFocus();alert('设置已保存！番茄钟：'+v+' 分钟')
 }
+
+// ===== Gist同步 =====
+function schedulePush(){if(pushTimer)clearTimeout(pushTimer);pushTimer=setTimeout(pushToGist,2000)}
+async function pushToGist(){
+  if(!GIST_ID)return;
+  var tk=getGistToken();if(!tk){syncStatus='noconfig';updateSyncIcon();return}
+  syncStatus='syncing';updateSyncIcon();
+  try{
+    var body={files:{}};body.files['gistfile1.txt']=null;body.files[GIST_FILE]={content:JSON.stringify(tsks,null,2)};
+    var res=await fetch('https://api.github.com/gists/'+GIST_ID,{method:'PATCH',headers:{'Authorization':'Bearer '+tk,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},body:JSON.stringify(body)});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    var gist=await res.json();lastGistVer=gist.history[0].version||'';syncStatus='ok'
+  }catch(e){syncStatus='error';console.warn('同步推送失败:',e.message)}
+  updateSyncIcon()
+}
+async function pullFromGist(){
+  if(!GIST_ID)return;
+  var tk=getGistToken();if(!tk){syncStatus='noconfig';updateSyncIcon();return}
+  try{
+    var res=await fetch('https://api.github.com/gists/'+GIST_ID,{headers:{'Authorization':'Bearer '+tk,'Accept':'application/vnd.github.v3+json'}});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    var gist=await res.json();var remoteVer=gist.history[0].version||'';
+    if(remoteVer===lastGistVer)return;
+    lastGistVer=remoteVer;
+    var fd=gist.files[GIST_FILE];if(!fd)return;
+    var rd=JSON.parse(fd.content);if(!Array.isArray(rd))return;
+    var ls=JSON.stringify(tsks),rs=JSON.stringify(rd);
+    if(ls!==rs){tsks=rd;var oldView=curView;localStorage.setItem(KEY_T,JSON.stringify(tsks));rdr();if(oldView===2)renderFocus();syncStatus='ok'}
+  }catch(e){syncStatus='error';console.warn('同步拉取失败:',e.message)}
+  updateSyncIcon()
+}
+function startAutoSync(){if(syncTimer)return;setTimeout(pullFromGist,500);syncTimer=setInterval(pullFromGist,1800000)}
+function updateSyncIcon(){
+  var el=document.getElementById('syncIcon');if(!el)return;
+  if(!getGistToken()){el.textContent='⚠';el.title='未配置同步Token，请在设置中添加';el.style.color='var(--yellow)';return}
+  el.textContent={idle:'○',syncing:'…',ok:'✓',error:'✗'}[syncStatus]||'○';
+  el.title={idle:'等待同步',syncing:'同步中…',ok:'已同步',error:'同步失败'}[syncStatus]||'';
+  el.style.color=syncStatus==='ok'?'var(--green)':syncStatus==='error'?'var(--red)':syncStatus==='syncing'?'var(--yellow)':'var(--muted)'
+}
+// =====
 
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){cls();closeTeamMgmt();closeSettings()}});
 ['md','tm','st'].forEach(id=>{document.getElementById(id).addEventListener('click',function(e){if(e.target===this){if(id==='md')cls();else if(id==='tm')closeTeamMgmt();else closeSettings()}})});
