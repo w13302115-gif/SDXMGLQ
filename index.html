@@ -1557,7 +1557,7 @@ async function pullFromGist(){
   }catch(e){syncStatus='error';console.warn('同步拉取失败:',e.message)}
   updateSyncIcon()
 }
-function startAutoSync(){if(syncTimer)return;setTimeout(pullFromGist,500);syncTimer=setInterval(pullFromGist,1800000)}
+function startAutoSync(){if(syncTimer)return;setTimeout(pullFromGist,500);syncTimer=setInterval(pullFromGist,300000)}
 function updateSyncIcon(){
   var el=document.getElementById('syncIcon');if(!el)return;
   if(!getGistToken()){el.textContent='⚠';el.title='未配置同步Token，请在设置中添加';el.style.color='var(--yellow)';return}
