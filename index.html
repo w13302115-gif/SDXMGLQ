@@ -1534,9 +1534,9 @@ async function pushToGist(){
   var tk=getGistToken();if(!tk){syncStatus='noconfig';updateSyncIcon();return}
   syncStatus='syncing';updateSyncIcon();
   try{
-    var body={files:{}};body.files['gistfile1.txt']=null;body.files[GIST_FILE]={content:JSON.stringify(tsks,null,2)};
+    var body={files:{}};body.files[GIST_FILE]={content:JSON.stringify(tsks,null,2)};
     var res=await fetch('https://api.github.com/gists/'+GIST_ID,{method:'PATCH',headers:{'Authorization':'Bearer '+tk,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},body:JSON.stringify(body)});
-    if(!res.ok)throw new Error('HTTP '+res.status);
+    if(!res.ok){var errBody='';try{errBody=await res.text()}catch(x){};throw new Error('HTTP '+res.status+(errBody?' | '+errBody:''))}
     var gist=await res.json();lastGistVer=gist.history[0].version||'';syncStatus='ok'
   }catch(e){syncStatus='error';console.warn('同步推送失败:',e.message)}
   updateSyncIcon()
