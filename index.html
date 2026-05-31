@@ -1270,40 +1270,52 @@ function createZipBlob(files){
 }
 
 function exportDoneXls(){
-  var rows=[],doneData=[];
-  rows.push(['项目名称','子任务名称','优先级','负责人','实际时间','完成时间','状态']);
-  var hasData=false;
+  var projs=[],hasData=false;
   tsks.forEach(function(t){
-    var td=JSON.parse(JSON.stringify(t));
     if(t.sb&&t.sb.length){
       var doneSb=t.sb.filter(function(s){return s.done});
       if(doneSb.length){
         hasData=true;
+        var td=JSON.parse(JSON.stringify(t));
         td.sb=JSON.parse(JSON.stringify(doneSb));
-        doneData.push(td);
-        doneSb.forEach(function(s){
-          rows.push([esc(t.nm||''),esc(s.nm||''),t.pr||'',(s.assignees?s.assignees.join(', '):''),s.at||'',s.at||'',s.status||'已完成'])
-        })
+        projs.push(td);
       }
     }else if(t.done){
       hasData=true;
-      td.done=true;
-      doneData.push(td);
-      rows.push([esc(t.nm||''),'','',t.pr||'','','',''])
+      var td=JSON.parse(JSON.stringify(t));
+      td.done=true;td.sb=null;
+      projs.push(td);
     }
   });
   if(!hasData){alert('没有已完成的子任务可导出');return}
   var d=new Date(),p=function(n){return('0'+n).slice(-2)};
   var ts=d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
   var fbase='已完成任务_'+ts;
-  // .xls
-  var h='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>已完成任务</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><style>td{padding:6px 10px;border:1px solid #ccc;font-size:12px}th{padding:8px 12px;border:1px solid #999;background:#4472c4;color:#fff;font-size:13px;font-weight:700}table{border-collapse:collapse}</style></head><body><table>';
-  h+='<tr>'+rows[0].map(function(c){return'<th>'+c+'</th>'}).join('')+'</tr>';
-  for(var i=1;i<rows.length;i++)h+='<tr>'+rows[i].map(function(c){return'<td>'+c+'</td>'}).join('')+'</tr>';
+  var h='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>已完成任务</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><style>td{padding:5px 10px;border:1px solid #d0d0d0;font-size:11px;font-family:Microsoft YaHei}th{padding:7px 10px;border:1px solid #4472c4;background:#4472c4;color:#fff;font-size:12px;font-weight:700;font-family:Microsoft YaHei}table{border-collapse:collapse;width:100%}.prj-head td{border-bottom:2px solid #4472c4;border-top:2px solid #4472c4;background:#e8f0fe;font-weight:700;font-size:12px;color:#1a1a2e}</style></head><body><table>';
+  h+='<tr><th style="width:34%">项目 / 子任务</th><th style="width:10%">优先级</th><th style="width:18%">负责人</th><th style="width:18%">完成时间</th><th style="width:10%">状态</th></tr>';
+  var totalSubs=0;
+  projs.forEach(function(t){
+    if(t.sb&&t.sb.length){
+      totalSubs+=t.sb.length;
+      h+='<tr class="prj-head"><td colspan="5">📁 '+esc(t.nm||'未命名')+' <span style="font-weight:400;color:#666;font-size:10px">— '+t.sb.length+'项已完成</span></td></tr>';
+      t.sb.forEach(function(s){
+        var prCls=t.pr==='high'?'color:#c00':t.pr==='medium'?'color:#e65100':t.pr==='low'?'color:#2e7d32':'';
+        h+='<tr><td style="padding-left:28px">├─ '+esc(s.nm||'')+'</td>'+
+          '<td style="'+prCls+'">'+(t.pr==='high'?'高':t.pr==='medium'?'中':t.pr==='low'?'低':'')+'</td>'+
+          '<td>'+(s.assignees?esc(s.assignees.join(', ')):'')+'</td>'+
+          '<td>'+esc(s.at||'')+'</td>'+
+          '<td style="color:#2e7d32">已完成</td></tr>'
+      });
+    }else{
+      totalSubs++;
+      h+='<tr class="prj-head"><td colspan="5">📁 '+esc(t.nm||'未命名')+' <span style="font-weight:400;color:#666;font-size:10px">— 已完成</span></td></tr>'
+    }
+  });
+  h+='<tr style="background:#f5f5f5;font-weight:600;border-top:2px solid #999"><td colspan="5">📊 合计: '+projs.length+'个项目 · '+totalSubs+'项已完成 · 导出日期: '+ts+'</td></tr>';
   h+='</table></body></html>';
   var zipBlob=createZipBlob([
     {name:fbase+'.xls',data:h},
-    {name:fbase+'.json',data:JSON.stringify(doneData,null,2)}
+    {name:fbase+'.json',data:JSON.stringify(projs,null,2)}
   ]);
   var a=document.createElement('a');a.href=URL.createObjectURL(zipBlob);a.download=fbase+'.zip';a.click()
 }
