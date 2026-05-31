@@ -356,7 +356,7 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 <h3 id="mt">新建项目</h3>
 <div class="fld"><label>项目名称</label><input id="en" placeholder="输入项目名称"></div>
 <div class="fld-row">
-<div class="fld"><label>预估时间</label><input id="ee" placeholder="如：2h / 半天"></div>
+<div class="fld"><label>截止时间</label><input id="ee" placeholder="如：5/20"></div>
 <div class="fld"><label>优先级</label><select id="ep"><option value="high">🔴 高</option><option value="medium" selected>🟡 中</option><option value="low">🟢 低</option></select></div>
 </div>
 <div class="fld"><label>截止日期</label><input id="ed" placeholder="如：5/20"></div>
@@ -685,7 +685,7 @@ function cd(t,i){
     '<span class="cb-wrap" onclick="event.stopPropagation()"><input type="checkbox" '+(t.done?'checked':'')+' onchange="tt('+i+')"><span class="cb-box">&#10003;</span></span>'+
     '<span class="priority-dot '+(t.pr||'medium')+'"></span>'+
     '<span class="task-info"><div class="task-title-text">'+esc(t.nm||'未命名')+'</div>'+
-    '<div class="task-meta"><span>预估:'+esc(t.et||'-')+'</span>'+at2+ds2+capt+dlyTag+privTag+'</div></span>'+
+    '<div class="task-meta"><span>截止:'+esc(t.et||'-')+'</span>'+at2+ds2+capt+dlyTag+privTag+'</div></span>'+
     '<span class="task-actions">'+
     '<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleTaskPrivate('+i+')" title="'+(t.private?'取消个人待办':'设为个人待办')+'">🔒</button>'+
     '<button class="btn btn-xs" onclick="event.stopPropagation();edt('+i+')">编辑</button>'+
@@ -717,7 +717,7 @@ function addSubRowHtml(i){
   var open=showAddSubFor[i];
   var allP=allPeople(),cbHtml=allP.map(function(n){return'<label class="assignee-cb"><input type="checkbox" value="'+esc(n)+'"> '+esc(n)+'</label>'}).join('');
   return'<div class="add-sub-toggle" id="addSubBtn_'+i+'" style="'+(open?'display:none':'')+'" onclick="showAddSub('+i+')">+ 添加待办项</div>'+
-    '<div class="add-sub-row" id="addSubRow_'+i+'" style="'+(open?'display:flex':'display:none')+'"><input class="si-name" id="sn_'+i+'" placeholder="+ 待办项" onkeydown="if(event.key===\'Enter\')as('+i+')"><input class="si-est" id="se_'+i+'" placeholder="预估"><label class="chk-mini"><input type="checkbox" id="sdel_'+i+'" onchange="tgCD('+i+')">协作</label><label class="chk-mini"><input type="checkbox" id="spom_'+i+'">🍅</label><button class="btn btn-xs btn-primary" onclick="as('+i+')">添加</button><button class="btn btn-xs" onclick="hideAddSub('+i+')">取消</button></div>'+
+    '<div class="add-sub-row" id="addSubRow_'+i+'" style="'+(open?'display:flex':'display:none')+'"><input class="si-name" id="sn_'+i+'" placeholder="+ 待办项" onkeydown="if(event.key===\'Enter\')as('+i+')"><input class="si-est" id="se_'+i+'" placeholder="截止"><label class="chk-mini"><input type="checkbox" id="sdel_'+i+'" onchange="tgCD('+i+')">协作</label><label class="chk-mini"><input type="checkbox" id="spom_'+i+'">🍅</label><button class="btn btn-xs btn-primary" onclick="as('+i+')">添加</button><button class="btn btn-xs" onclick="hideAddSub('+i+')">取消</button></div>'+
     '<div class="assignee-panel" id="ap_'+i+'">'+cbHtml+'</div>';
 }
 function tgCD(i){let e=document.getElementById('ap_'+i);if(e)e.style.display=document.getElementById('sdel_'+i).checked?'flex':'none'}
@@ -748,13 +748,13 @@ function subHtml(s,ti,si){
 
   if(s.done){
     let ex='';if(s.pc)ex='<span>'+s.pc+'🍅</span>';
-    return'<div class="'+rc+'" data-ti="'+ti+'" data-si="'+si+'"><span class="subtask-left"><span class="cb-wrap" onclick="event.stopPropagation()"><input type="checkbox" checked onchange="undoSub('+ti+','+si+')"><span class="cb-box">&#10003;</span></span><span class="subtask-name">'+esc(s.nm)+'</span><span class="subtask-meta"><span>预估:'+esc(s.et||'-')+'</span><span>实际:'+esc(s.at||'')+'</span>'+ex+'</span>'+privTag+asgnTags+'</span><span class="subtask-right">'+(isManager()?'<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button><button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button><button class="btn btn-xs" onclick="event.stopPropagation();ds('+ti+','+si+')">✕</button>':(isM?'<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button><button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button>':''))+'</span>'+(isManager()?'<select class="sub-move-sel" onchange="moveSubToProject('+ti+','+si+',this.value)" onclick="event.stopPropagation()" title="移动子任务到其他项目"><option value="">↗</option>'+getProjOpts(ti)+'</select>':'')+'</div>';
+    return'<div class="'+rc+'" data-ti="'+ti+'" data-si="'+si+'"><span class="subtask-left"><span class="cb-wrap" onclick="event.stopPropagation()"><input type="checkbox" checked onchange="undoSub('+ti+','+si+')"><span class="cb-box">&#10003;</span></span></span><span class="subtask-name">'+esc(s.nm)+'</span><span class="subtask-meta"><span>截止:'+esc(s.et||'-')+'</span><span>实际:'+esc(s.at||'')+'</span>'+ex+'</span>'+privTag+asgnTags+'</span><span class="subtask-right">'+(isManager()?'<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button><button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button><button class="btn btn-xs" onclick="event.stopPropagation();ds('+ti+','+si+')">✕</button>':(isM?'<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button><button class="btn btn-xs" onclick="event.stopPropagation();startEditSub('+ti+','+si+')">编辑</button>':''))+'</span>'+(isManager()?'<select class="sub-move-sel" onchange="moveSubToProject('+ti+','+si+',this.value)" onclick="event.stopPropagation()" title="移动子任务到其他项目"><option value="">↗</option>'+getProjOpts(ti)+'</select>':'')+'</div>';
   }
 
   let l='',r='<span class="subtask-right">';
 
   if(s.assignees&&s.assignees.length&&s.status==='submitted'){
-    l='<span class="subtask-left"><span class="cb-wrap"><span class="cb-box" style="opacity:.35;cursor:default">&#10003;</span></span><span class="subtask-name">'+esc(s.nm)+'</span><span class="subtask-meta"><span>预估:'+esc(s.et||'-')+'</span>'+asgnTags+' <span class="tag tag-pending">已提交</span></span>'+privTag+'</span>';
+    l='<span class="subtask-left"><span class="cb-wrap"><span class="cb-box" style="opacity:.35;cursor:default">&#10003;</span></span><span class="subtask-name">'+esc(s.nm)+'</span><span class="subtask-meta"><span>截止:'+esc(s.et||'-')+'</span>'+asgnTags+' <span class="tag tag-pending">已提交</span></span>'+privTag+'</span>';
     if(isManager()){
       r+='<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button>';
       r+='<button class="btn btn-xs btn-green" onclick="event.stopPropagation();approve('+ti+','+si+')">确认完成</button>';
@@ -771,7 +771,7 @@ function subHtml(s,ti,si){
       r+='<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button>';
     }
   }else if(s.assignees&&s.assignees.length&&s.status==='assigned'){
-    l='<span class="subtask-left"><span class="cb-wrap"><span class="cb-box" style="opacity:.3;cursor:default">-</span></span><span class="subtask-name">'+esc(s.nm)+'</span><span class="subtask-meta"><span>预估:'+esc(s.et||'-')+'</span>'+asgnTags+'</span>'+privTag+'</span>';
+    l='<span class="subtask-left"><span class="cb-wrap"><span class="cb-box" style="opacity:.3;cursor:default">-</span></span><span class="subtask-name">'+esc(s.nm)+'</span><span class="subtask-meta"><span>截止:'+esc(s.et||'-')+'</span>'+asgnTags+'</span>'+privTag+'</span>';
     if(isM){
       if(s.pom){if(s.prun){let rem=calcRem(s);r+='<span class="pomo-timer running" id="stpt_'+ti+'_'+si+'">'+fmtTime(rem)+'</span>'}else r+='<button class="btn btn-xs btn-orange" onclick="event.stopPropagation();startPomo('+ti+','+si+')">▶ '+pomoLabel()+'</button>';r+='<span class="tag tag-pomo">'+(s.pc||0)+'</span>'}
       r+='<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button>';
@@ -790,9 +790,9 @@ function subHtml(s,ti,si){
   }else{
     let selfAssign=!s.assignees||!s.assignees.length;
     if(isManager()){
-      l='<span class="subtask-left"><span class="cb-wrap"><input type="checkbox" onchange="ts('+ti+','+si+')"><span class="cb-box">&#10003;</span></span><span class="subtask-name">'+esc(s.nm)+'</span><span class="subtask-meta"><span>预估:'+esc(s.et||'-')+'</span>'+(s.at?'<span>实际:'+esc(s.at)+'</span>':'')+asgnTags+'</span>'+privTag+'</span>';
+      l='<span class="subtask-left"><span class="cb-wrap"><input type="checkbox" onchange="ts('+ti+','+si+')"><span class="cb-box">&#10003;</span></span><span class="subtask-name">'+esc(s.nm)+'</span><span class="subtask-meta"><span>截止:'+esc(s.et||'-')+'</span>'+(s.at?'<span>实际:'+esc(s.at)+'</span>':'')+asgnTags+'</span>'+privTag+'</span>';
     }else{
-      l='<span class="subtask-left"><span class="cb-wrap"><span class="cb-box" style="opacity:.3;cursor:default">-</span></span><span class="subtask-name">'+esc(s.nm)+'</span><span class="subtask-meta"><span>预估:'+esc(s.et||'-')+'</span>'+(s.at?'<span>实际:'+esc(s.at)+'</span>':'')+asgnTags+'</span>'+privTag+'</span>';
+      l='<span class="subtask-left"><span class="cb-wrap"><span class="cb-box" style="opacity:.3;cursor:default">-</span></span><span class="subtask-name">'+esc(s.nm)+'</span><span class="subtask-meta"><span>截止:'+esc(s.et||'-')+'</span>'+(s.at?'<span>实际:'+esc(s.at)+'</span>':'')+asgnTags+'</span>'+privTag+'</span>';
     }
     if(isM){
       if(s.pom){if(s.prun){let rem=calcRem(s);r+='<span class="pomo-timer running" id="stpt_'+ti+'_'+si+'">'+fmtTime(rem)+'</span>'}else r+='<button class="btn btn-xs btn-orange" onclick="event.stopPropagation();startPomo('+ti+','+si+')">▶ '+pomoLabel()+'</button>';r+='<span class="tag tag-pomo">'+(s.pc||0)+'</span>'}
@@ -828,7 +828,7 @@ function subEditHtml(s,ti,si){
     return'<label class="assignee-cb"><input type="checkbox" value="'+esc(n)+'"'+ch+'> '+esc(n)+'</label>'
   }).join('');
   let privCh=s.private?' checked':'';
-  return'<div class="sub-edit-row"><input class="se-name" id="sedn_'+ti+'_'+si+'" value="'+esc(s.nm)+'"><input class="se-est" id="sede_'+ti+'_'+si+'" value="'+esc(s.et||'')+'" placeholder="预估"><label class="chk-mini"><input type="checkbox" id="sedel_'+ti+'_'+si+'" '+(checked?'checked':'')+' onchange="tgEC('+ti+','+si+')">协作</label><label class="chk-mini"><input type="checkbox" id="sepom_'+ti+'_'+si+'" '+(s.pom?'checked':'')+'>🍅</label><label class="chk-mini"><input type="checkbox" id="sepriv_'+ti+'_'+si+'"'+privCh+'>个人待办</label><button class="btn btn-xs btn-primary" onclick="saveEditSub('+ti+','+si+')">保存</button><button class="btn btn-xs" onclick="cancelEditSub('+ti+','+si+')">取消</button></div>'+
+  return'<div class="sub-edit-row"><input class="se-name" id="sedn_'+ti+'_'+si+'" value="'+esc(s.nm)+'"><input class="se-est" id="sede_'+ti+'_'+si+'" value="'+esc(s.et||'')+'" placeholder="截止"><label class="chk-mini"><input type="checkbox" id="sedel_'+ti+'_'+si+'" '+(checked?'checked':'')+' onchange="tgEC('+ti+','+si+')">协作</label><label class="chk-mini"><input type="checkbox" id="sepom_'+ti+'_'+si+'" '+(s.pom?'checked':'')+'>🍅</label><label class="chk-mini"><input type="checkbox" id="sepriv_'+ti+'_'+si+'"'+privCh+'>个人待办</label><button class="btn btn-xs btn-primary" onclick="saveEditSub('+ti+','+si+')">保存</button><button class="btn btn-xs" onclick="cancelEditSub('+ti+','+si+')">取消</button></div>'+
     '<div class="assignee-edit-panel" id="aep_'+ti+'_'+si+'"'+(checked?' style="display:flex"':'')+'>'+cbHtml+'</div>';
 }
 function tgEC(ti,si){let e=document.getElementById('aep_'+ti+'_'+si);if(e)e.style.display=document.getElementById('sedel_'+ti+'_'+si).checked?'flex':'none'}
