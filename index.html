@@ -534,12 +534,27 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 </div>
 </div>
 
+<div class="modal-bg" id="subDescDlg">
+<div class="modal-box" style="max-width:600px">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+<h3 style="margin:0;font-size:.95rem" id="subDescTitle">子任务备注</h3>
+<button class="btn btn-xs" onclick="closeSubDesc()" style="font-size:.9rem">✕</button>
+</div>
+<textarea id="subDescText" style="width:100%;min-height:180px;padding:12px;background:#12121a;border:1px solid #333;border-radius:8px;color:var(--text);font-size:.78rem;font-family:inherit;resize:vertical;outline:none;line-height:1.6" placeholder="写任务说明、操作步骤、备注..."></textarea>
+<div class="mb">
+<button class="btn" onclick="closeSubDesc()">取消</button>
+<button class="btn btn-primary" onclick="saveSubDesc()">保存</button>
+</div>
+</div>
+</div>
+
 <script>
 window.onerror=function(m,s,l,c,e){try{var el=document.getElementById('debugErr');el.style.display='block';el.textContent+='ERR: '+m+' ['+s+':'+l+']\n'}catch(x){};return false};
 const KEY_T='xl_tm_tasks',KEY_C='xl_tm_cfg',KEY_I='xl_tm_identity';
 let tsks=[],cfg={},me='',ei=-1,dragIdx=-1,curView=1;
 var pomoTask=null,timerId=null,expFolderHandle=null,activePomos={},showAddSubFor={};
 var GIST_ID='92506ea1191f416cac4b92081ea37c2a',GIST_FILE='shen_dong_data.json',syncStatus='idle',syncTimer=null,lastGistVer='',pushTimer=null;
+var subDescTi=-1,subDescSi=-1;
 function getGistToken(){return cfg.gistToken||''}
 
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
@@ -817,7 +832,8 @@ function subHtml(s,ti,si){
       r+='<button class="btn btn-xs btn-pink" onclick="event.stopPropagation();toggleSubPrivate('+ti+','+si+')" title="'+(s.private?'取消个人待办':'设为个人待办')+'">🔒</button>';
     }
   }
-  r+='</span>';var mSel='';if(isManager())mSel='<select class="sub-move-sel" onchange="moveSubToProject('+ti+','+si+',this.value)" onclick="event.stopPropagation()" title="移动子任务到其他项目"><option value="">↗</option>'+getProjOpts(ti)+'</select>';
+  var descBtn='<button class="btn btn-xs" onclick="event.stopPropagation();openSubDesc('+ti+','+si+')" style="'+(s.desc?'color:#ffd966;border-color:#ffd966':'')+'">📝</button>';
+  r+=descBtn;r+='</span>';var mSel='';if(isManager())mSel='<select class="sub-move-sel" onchange="moveSubToProject('+ti+','+si+',this.value)" onclick="event.stopPropagation()" title="移动子任务到其他项目"><option value="">↗</option>'+getProjOpts(ti)+'</select>';
   return'<div class="'+rc+'" data-ti="'+ti+'" data-si="'+si+'">'+l+r+mSel+'</div>';
 }
 
@@ -829,7 +845,8 @@ function subEditHtml(s,ti,si){
   }).join('');
   let privCh=s.private?' checked':'';
   return'<div class="sub-edit-row"><input class="se-name" id="sedn_'+ti+'_'+si+'" value="'+esc(s.nm)+'"><input class="se-est" id="sede_'+ti+'_'+si+'" value="'+esc(s.et||'')+'" placeholder="截止"><label class="chk-mini"><input type="checkbox" id="sedel_'+ti+'_'+si+'" '+(checked?'checked':'')+' onchange="tgEC('+ti+','+si+')">协作</label><label class="chk-mini"><input type="checkbox" id="sepom_'+ti+'_'+si+'" '+(s.pom?'checked':'')+'>🍅</label><label class="chk-mini"><input type="checkbox" id="sepriv_'+ti+'_'+si+'"'+privCh+'>个人待办</label><button class="btn btn-xs btn-primary" onclick="saveEditSub('+ti+','+si+')">保存</button><button class="btn btn-xs" onclick="cancelEditSub('+ti+','+si+')">取消</button></div>'+
-    '<div class="assignee-edit-panel" id="aep_'+ti+'_'+si+'"'+(checked?' style="display:flex"':'')+'>'+cbHtml+'</div>';
+    '<div class="assignee-edit-panel" id="aep_'+ti+'_'+si+'"'+(checked?' style="display:flex"':'')+'>'+cbHtml+'</div>'+
+    '<div class="desc-edit-panel"><textarea id="seddesc_'+ti+'_'+si+'" placeholder="备注说明..." style="width:100%;min-height:60px;padding:8px;background:#12121a;border:1px solid #333;border-radius:6px;color:var(--text);font-size:.75rem;font-family:inherit;resize:vertical;outline:none;line-height:1.5">'+esc(s.desc||'')+'</textarea></div>';
 }
 function tgEC(ti,si){let e=document.getElementById('aep_'+ti+'_'+si);if(e)e.style.display=document.getElementById('sedel_'+ti+'_'+si).checked?'flex':'none'}
 function startEditSub(ti,si){tsks[ti].sb[si]._ed=true;svs();rdr();setTimeout(()=>{let e=document.getElementById('sedn_'+ti+'_'+si);if(e)e.focus()},100)}
@@ -837,6 +854,7 @@ function cancelEditSub(ti,si){delete tsks[ti].sb[si]._ed;svs();rdr()}
 function saveEditSub(ti,si){
   let s=tsks[ti].sb[si],n=document.getElementById('sedn_'+ti+'_'+si).value.trim();if(!n){alert('请输入名称');return}
   s.nm=n;s.et=document.getElementById('sede_'+ti+'_'+si).value.trim();
+  s.desc=document.getElementById('seddesc_'+ti+'_'+si).value.trim();
   let na=document.getElementById('sedel_'+ti+'_'+si).checked;
   if(na){
     let panel=document.getElementById('aep_'+ti+'_'+si);
@@ -854,6 +872,24 @@ function saveEditSub(ti,si){
   let prvEl=document.getElementById('sepriv_'+ti+'_'+si);
   if(prvEl)s.private=prvEl.checked;
   delete s._ed;svs();rdr();renderFocus()
+}
+
+function openSubDesc(ti,si){
+  subDescTi=ti;subDescSi=si;
+  var s=tsks[ti].sb[si];
+  document.getElementById('subDescTitle').textContent='📝 '+esc(s.nm||'未命名');
+  document.getElementById('subDescText').value=s.desc||'';
+  document.getElementById('subDescDlg').style.display='flex';
+  setTimeout(function(){document.getElementById('subDescText').focus()},100)
+}
+function closeSubDesc(){
+  document.getElementById('subDescDlg').style.display='none';
+  subDescTi=-1;subDescSi=-1
+}
+function saveSubDesc(){
+  if(subDescTi<0||subDescSi<0)return;
+  tsks[subDescTi].sb[subDescSi].desc=document.getElementById('subDescText').value.trim();
+  svs();rdr();renderFocus();closeSubDesc()
 }
 
 function calcRem(s){let e=Math.floor((Date.now()-s.pstart)/1000);return Math.max(0,pomoSec()-e)}
@@ -972,7 +1008,7 @@ function as(i){
   }
   let pom=document.getElementById('spom_'+i).checked;
   if(!tsks[i].sb)tsks[i].sb=[];
-  tsks[i].sb.push({id:genId(),nm:n,et:ee.value.trim(),done:false,at:'',assignees:st?assignees:null,status:st,sub:false,pom,pc:0,prun:false,pstart:0,private:false,quad:0});
+  tsks[i].sb.push({id:genId(),nm:n,et:ee.value.trim(),desc:'',done:false,at:'',assignees:st?assignees:null,status:st,sub:false,pom,pc:0,prun:false,pstart:0,private:false,quad:0});
   tsks[i].exp=true;hideAddSub(i);
   svs();rdr();renderFocus()
 }
@@ -1327,15 +1363,33 @@ function importDoneJson(){
       try{
         var d=JSON.parse(r.result);
         if(!Array.isArray(d))throw new Error();
-        var c=0;d.forEach(function(t){
+        var localMap={};tsks.forEach(function(t){localMap[t.id]=t});
+        var addT=0,addS=0;
+        d.forEach(function(t){
           if(!t.id||!t.nm)return;
-          t.done=true;
-          if(t.sb)t.sb.forEach(function(s){if(s.nm)s.done=true});
-          tsks.push(t);c++
+          var localT=localMap[t.id];
+          if(localT){
+            if(t.sb&&t.sb.length){
+              if(!localT.sb)localT.sb=[];
+              var subMap={};localT.sb.forEach(function(s){subMap[s.id]=s});
+              t.sb.forEach(function(impS){
+                if(!impS.id)return;
+                var localS=subMap[impS.id];
+                if(localS){localS.done=true;localS.at=localS.at||impS.at||''}
+                else{impS.done=true;localT.sb.push(impS);addS++}
+              });
+            }
+          }else{
+            t.done=true;if(t.sb)t.sb.forEach(function(s){s.done=true});
+            tsks.push(t);addT++;localMap[t.id]=t
+          }
         });
-        if(!c){alert('没有找到有效的已完成任务数据');return}
         svs();rdr();renderFocus();
-        alert('成功导入 '+c+' 个已完成项目（含'+d.reduce(function(s,t){return s+(t.sb?t.sb.length:0)},0)+'个子任务）')
+        var msg='导入完成！';
+        if(addT)msg+='\n新增 '+addT+' 个项目';
+        if(addS)msg+='\n恢复 '+addS+' 个已完成子任务';
+        if(!addT&&!addS)msg+='\n所有已完成任务已确认（无重复）';
+        alert(msg)
       }catch(e){alert('导入失败：文件格式不正确')}
     };
     r.readAsText(f)
@@ -1440,7 +1494,7 @@ function focusCard(item){
   var s=item.s,ti=item.ti,si=item.si,type=item.type,prj=item.prj||'',q=item.q,idx=item.idx;
   var qc=' q'+q,subTag=(type==='submitted'?' focus-submitted':'');
   return'<div class="focus-card'+qc+subTag+'" data-q="'+q+'" data-idx="'+idx+'" data-ti="'+ti+'" data-si="'+si+'" onclick="event.stopPropagation();openGantaPopup('+ti+','+si+')">'+
-    '<span class="fn"><div class="focus-name">'+esc(s.nm)+(type==='submitted'?'<span style="color:#fbbf24;font-size:.58rem;margin-left:4px">已提交</span>':'')+'</div>'+
+    '<span class="fn"><div class="focus-name">'+esc(s.nm)+(type==='submitted'?'<span style="color:#fbbf24;font-size:.58rem;margin-left:4px">已提交</span>':'')+(s.desc?'<span style="color:#ffd966;font-size:.7rem;margin-left:4px;cursor:pointer" onclick="event.stopPropagation();openSubDesc('+ti+','+si+')" title="有备注">📝</span>':'')+'</div>'+
     (prj?'<div class="focus-prj">← '+esc(prj)+'</div>':'')+
     (s.et?'<div class="focus-meta">'+esc(s.et)+'</div>':'')+'</span>'+
     '<span class="fa">'+
