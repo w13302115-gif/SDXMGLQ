@@ -292,10 +292,19 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 <span class="role-badge" id="hdrRole" style="font-size:.6rem;padding:2px 7px;border-radius:3px;font-weight:600"></span>
 </div>
 <span id="syncIcon" style="cursor:help;font-size:1rem;margin-right:6px;color:var(--muted)" title="同步状态">○</span>
-<button class="btn btn-sm" onclick="manualPush()" title="发布到云端">📤</button>
+<button class="btn btn-sm" onclick="manualPull()" id="btnPull" title="手动拉取云端更新">↓拉取</button>
+<button class="btn btn-sm" onclick="manualPush()" id="btnPub" title="发布到云端">↑上传</button>
 <button class="btn btn-sm" onclick="openTeamMgmt()" id="btnTeam" style="display:none">👥</button>
 <button class="btn btn-sm" onclick="openSettings()">⚙ 设置</button>
 <button class="btn btn-sm btn-danger" onclick="logout()">退出</button>
+</div>
+</div>
+
+<div id="syncBar" style="display:none;margin-bottom:12px;padding:10px 18px;background:var(--card);border:2px solid var(--accent);border-radius:var(--radius);align-items:center;justify-content:space-between;cursor:pointer;transition:all .2s" onclick="showSyncModal()">
+<div><span style="font-size:1.1rem">📥</span> <span id="syncBarText" style="font-weight:600;color:var(--accent)">远端有更新</span></div>
+<div style="display:flex;gap:8px;align-items:center">
+<span id="syncBarCount" style="font-size:.75rem;color:var(--muted)"></span>
+<span style="color:var(--accent);font-size:.8rem">点击查看 ›</span>
 </div>
 </div>
 
@@ -312,6 +321,8 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 <button class="btn btn-primary" onclick="add()">+ 新建项目</button>
 <button class="btn" onclick="exp()">📤 导出JSON</button>
 <button class="btn" onclick="imp()">📥 导入JSON</button>
+<button class="btn" onclick="exportDoneXls()" id="btnExportDone" style="display:none">📋 已完成</button>
+<button class="btn" onclick="importDoneJson()" id="btnImportDone" style="display:none">📂 导入已完成</button>
 <button class="btn btn-danger" onclick="clr()">🧹 清理已完成</button>
 </div>
 </div>
@@ -510,11 +521,12 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 </div>
 </div>
 
-<div id="syncModal" class="modal-overlay" style="display:none">
-<div class="modal" style="max-width:380px">
+<div class="modal-bg" id="syncModal">
+<div class="modal-box" style="max-width:600px">
 <h4 style="margin:0 0 12px">🔄 检测到远端数据变化</h4>
-<div style="font-size:.8rem;margin-bottom:16px;color:#666" id="syncModalInfo"></div>
-<div style="display:flex;gap:10px;justify-content:center">
+<div style="font-size:.8rem;margin-bottom:10px;color:var(--muted)" id="syncModalInfo"></div>
+<div id="syncModalContent" style="max-height:380px;overflow-y:auto;margin-bottom:14px;text-align:left;font-size:.72rem;border:1px solid #252530;border-radius:8px;padding:10px;background:#12121a;line-height:1.8"></div>
+<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
 <button class="btn btn-primary" onclick="doSyncOverwrite()">📥 覆盖本地</button>
 <button class="btn" onclick="doSyncMerge()">➕ 合并添加</button>
 </div>
@@ -534,6 +546,7 @@ function genId(){return Date.now().toString(36)+Math.random().toString(36).slice
 function esc(s){if(!s)return'';let d=document.createElement('div');d.textContent=s;return d.innerHTML}
 function ymd(){let d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0')+'-'+d.getDate().toString().padStart(2,'0')}
 function tdy(){let d=new Date();return d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日 星期'+['日','一','二','三','四','五','六'][d.getDay()]}
+function esh(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function nw(){let d=new Date(),p=n=>('0'+n).slice(-2);return(d.getMonth()+1)+'/'+d.getDate()+' '+p(d.getHours())+':'+p(d.getMinutes())}
 
 async function hashPwd(pw){if(!pw)return'';let e=new TextEncoder().encode(pw),h=await crypto.subtle.digest('SHA-256',e);return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('')}
@@ -619,6 +632,10 @@ function updateHeaders(){
   rb.textContent=me===cfg.manager?'管理员':getRole(me);
   rb.className='role-badge '+getRoleClass(me);
   document.getElementById('btnTeam').style.display=isManager()?'inline-flex':'none';
+  document.getElementById('btnPull').style.display='inline-flex';
+  document.getElementById('btnPub').style.display=isManager()?'inline-flex':'none';
+  document.getElementById('btnExportDone').style.display=isManager()?'inline-flex':'none';
+  document.getElementById('btnImportDone').style.display=isManager()?'inline-flex':'none';
   document.getElementById('td').textContent=tdy();document.getElementById('focusDate').textContent=tdy()
 }
 
@@ -647,7 +664,7 @@ function ldTasks(){
   });
   svs()
 }
-function svs(){localStorage.setItem(KEY_T,JSON.stringify(tsks));schedulePush()}
+function svs(){localStorage.setItem(KEY_T,JSON.stringify(tsks))}
 
 function rdr(){
   let c=document.getElementById('ts'),h=document.getElementById('eh');
@@ -1215,6 +1232,104 @@ function closeExportDlg(){
   document.getElementById('exportDlg').style.display='none'
 }
 
+function createZipBlob(files){
+  var ct=[];
+  for(var i=0;i<256;i++){var c=i;for(var j=0;j<8;j++)c=(c&1)?(0xedb88320^(c>>>1)):(c>>>1);ct[i]=c}
+  function crc32(buf){var c=-1;for(var i=0;i<buf.length;i++)c=ct[(c^buf[i])&255]^(c>>>8);return(c^-1)>>>0}
+  function w32(a,i,v){a[i]=v&255;a[i+1]=(v>>>8)&255;a[i+2]=(v>>>16)&255;a[i+3]=v>>>24}
+  function w16(a,i,v){a[i]=v&255;a[i+1]=(v>>>8)&255}
+  var enc=new TextEncoder();
+  var lbs=[],cds=[],off=0;
+  for(var i=0;i<files.length;i++){
+    var nmB=enc.encode(files[i].name),dtB=enc.encode(files[i].data),crc=crc32(dtB),sz=dtB.length;
+    var lb=new Uint8Array(30+nmB.length);
+    w32(lb,0,0x04034b50);w16(lb,4,20);w16(lb,6,2048);w16(lb,8,0);
+    w16(lb,10,0);w16(lb,12,0);
+    w32(lb,14,crc);w32(lb,18,sz);w32(lb,22,sz);
+    w16(lb,26,nmB.length);w16(lb,28,0);
+    lb.set(nmB,30);
+    lbs.push({h:lb,d:dtB,o:off});off+=lb.length+sz;
+    var cd=new Uint8Array(46+nmB.length);
+    w32(cd,0,0x02014b50);w16(cd,4,20);w16(cd,6,20);w16(cd,8,2048);w16(cd,10,0);
+    w16(cd,12,0);w16(cd,14,0);
+    w32(cd,16,crc);w32(cd,20,sz);w32(cd,24,sz);
+    w16(cd,28,nmB.length);w16(cd,30,0);w16(cd,32,0);
+    w16(cd,34,0);w16(cd,36,0);w32(cd,38,0);
+    w32(cd,42,lbs[i].o);
+    cd.set(nmB,46);
+    cds.push(cd)}
+  var cdOff=0;for(var i=0;i<lbs.length;i++)cdOff+=lbs[i].h.length+lbs[i].d.length;
+  var cdSz=0;for(var i=0;i<cds.length;i++)cdSz+=cds[i].length;
+  var buf=new Uint8Array(cdOff+cdSz+22);var p=0;
+  for(var i=0;i<lbs.length;i++){buf.set(lbs[i].h,p);p+=lbs[i].h.length;buf.set(lbs[i].d,p);p+=lbs[i].d.length}
+  for(var i=0;i<cds.length;i++){buf.set(cds[i],p);p+=cds[i].length}
+  w32(buf,p,0x06054b50);w16(buf,p+4,0);w16(buf,p+6,0);
+  w16(buf,p+8,cds.length);w16(buf,p+10,cds.length);
+  w32(buf,p+12,cdSz);w32(buf,p+16,cdOff);w16(buf,p+20,0);
+  return new Blob([buf],{type:'application/zip'})
+}
+
+function exportDoneXls(){
+  var rows=[],doneData=[];
+  rows.push(['项目名称','子任务名称','优先级','负责人','实际时间','完成时间','状态']);
+  var hasData=false;
+  tsks.forEach(function(t){
+    var td=JSON.parse(JSON.stringify(t));
+    if(t.sb&&t.sb.length){
+      var doneSb=t.sb.filter(function(s){return s.done});
+      if(doneSb.length){
+        hasData=true;
+        td.sb=JSON.parse(JSON.stringify(doneSb));
+        doneData.push(td);
+        doneSb.forEach(function(s){
+          rows.push([esc(t.nm||''),esc(s.nm||''),t.pr||'',(s.assignees?s.assignees.join(', '):''),s.at||'',s.at||'',s.status||'已完成'])
+        })
+      }
+    }else if(t.done){
+      hasData=true;
+      td.done=true;
+      doneData.push(td);
+      rows.push([esc(t.nm||''),'','',t.pr||'','','',''])
+    }
+  });
+  if(!hasData){alert('没有已完成的子任务可导出');return}
+  var d=new Date(),p=function(n){return('0'+n).slice(-2)};
+  var ts=d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+  var fbase='已完成任务_'+ts;
+  // .xls
+  var h='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>已完成任务</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><style>td{padding:6px 10px;border:1px solid #ccc;font-size:12px}th{padding:8px 12px;border:1px solid #999;background:#4472c4;color:#fff;font-size:13px;font-weight:700}table{border-collapse:collapse}</style></head><body><table>';
+  h+='<tr>'+rows[0].map(function(c){return'<th>'+c+'</th>'}).join('')+'</tr>';
+  for(var i=1;i<rows.length;i++)h+='<tr>'+rows[i].map(function(c){return'<td>'+c+'</td>'}).join('')+'</tr>';
+  h+='</table></body></html>';
+  var zipBlob=createZipBlob([
+    {name:fbase+'.xls',data:h},
+    {name:fbase+'.json',data:JSON.stringify(doneData,null,2)}
+  ]);
+  var a=document.createElement('a');a.href=URL.createObjectURL(zipBlob);a.download=fbase+'.zip';a.click()
+}
+
+function importDoneJson(){
+  var inp=document.createElement('input');inp.type='file';inp.accept='.json';
+  inp.onchange=function(){var f=this.files[0];if(!f)return;var r=new FileReader();
+    r.onload=function(){
+      try{
+        var d=JSON.parse(r.result);
+        if(!Array.isArray(d))throw new Error();
+        var c=0;d.forEach(function(t){
+          if(!t.id||!t.nm)return;
+          t.done=true;
+          if(t.sb)t.sb.forEach(function(s){if(s.nm)s.done=true});
+          tsks.push(t);c++
+        });
+        if(!c){alert('没有找到有效的已完成任务数据');return}
+        svs();rdr();renderFocus();
+        alert('成功导入 '+c+' 个已完成项目（含'+d.reduce(function(s,t){return s+(t.sb?t.sb.length:0)},0)+'个子任务）')
+      }catch(e){alert('导入失败：文件格式不正确')}
+    };
+    r.readAsText(f)
+  };inp.click()
+}
+
 function imp(){
   var inp=document.createElement('input');inp.type='file';inp.accept='.json';
   inp.onchange=function(){var f=this.files[0];if(!f)return;var r=new FileReader();
@@ -1554,7 +1669,7 @@ async function pushToGist(){
   }catch(e){syncStatus='error';console.warn('同步推送失败:',e.message)}
   updateSyncIcon()
 }
-var syncRemoteData=null;
+var syncRemoteData=null,syncRemoteDiff=null;
 
 async function pullFromGist(){
   if(!GIST_ID)return;
@@ -1572,13 +1687,30 @@ async function pullFromGist(){
       if(rd.length===0&&tsks.length>0){console.warn('同步:远端为空，跳过以保护本地数据');return}
       if(tsks.length===0){tsks=JSON.parse(JSON.stringify(rd));localStorage.setItem(KEY_T,JSON.stringify(tsks));rdr();renderFocus();syncStatus='ok';return}
       syncRemoteData=rd;
-      document.getElementById('syncModalInfo').textContent=tsks.length+'个本地任务 vs '+rd.length+'个远端任务';
-      document.getElementById('syncModal').style.display='flex'
+      var nids={},rmids={},lid={};tsks.forEach(function(t){lid[t.id]=1});
+      rd.forEach(function(t){if(!lid[t.id])nids[t.id]=t});
+      tsks.forEach(function(t){if(!rd.find(function(r){return r.id===t.id}))rmids[t.id]=t});
+      var mods=[];rd.forEach(function(r){
+        var lt=tsks.find(function(t){return t.id===r.id});
+        if(lt){var ls=JSON.stringify(lt),rs=JSON.stringify(r);
+          if(ls!==rs){
+            var chg=[];if(lt.nm!==r.nm)chg.push('项目名');
+            var la=lt.sb||[],ra=r.sb||[],li={},ri={};
+            la.forEach(function(s){li[s.id]=s});ra.forEach(function(s){ri[s.id]=s});
+            var as=ra.filter(function(s){return!li[s.id]}).map(function(s){return s.nm});
+            var rDel=la.filter(function(s){return!ri[s.id]}).map(function(s){return s.nm});
+            var ms=[];ra.forEach(function(s){var ls2=li[s.id];if(ls2&&JSON.stringify(ls2)!==JSON.stringify(s))ms.push({old:ls2.nm,new:s.nm})});
+            chg.push('子任务:'+la.length+'→'+ra.length);
+            mods.push({remote:r,local:lt,changes:chg,addedSubs:as,removedSubs:rDel,modifiedSubs:ms})}}});
+      syncRemoteDiff={new:Object.values(nids),removed:Object.values(rmids),modified:mods,localTotal:tsks.length,remoteTotal:rd.length};
+      document.getElementById('syncBarText').textContent='远端有'+(Object.keys(nids).length)+'条新内容'+(mods.length?' +'+mods.length+'条修改':'');
+      document.getElementById('syncBarCount').textContent=tsks.length+'本地 · '+rd.length+'远端';
+      document.getElementById('syncBar').style.display='flex'
     }
   }catch(e){syncStatus='error';console.warn('同步拉取失败:',e.message)}
   updateSyncIcon()
 }
-function closeSyncModal(){document.getElementById('syncModal').style.display='none';syncRemoteData=null}
+function closeSyncModal(){document.getElementById('syncModal').style.display='none';hideSyncBar()}
 function doSyncOverwrite(){
   if(!syncRemoteData)return;
   tsks=JSON.parse(JSON.stringify(syncRemoteData));var oldView=curView;localStorage.setItem(KEY_T,JSON.stringify(tsks));rdr();if(oldView===2)renderFocus();syncStatus='ok';closeSyncModal();updateSyncIcon()
@@ -1593,7 +1725,52 @@ function doSyncMerge(){
   if(added){localStorage.setItem(KEY_T,JSON.stringify(tsks));rdr();renderFocus();syncStatus='ok'}
   closeSyncModal();updateSyncIcon()
 }
-function manualPush(){schedulePush();syncStatus='syncing';updateSyncIcon();setTimeout(function(){if(syncStatus==='syncing'){syncStatus='ok';updateSyncIcon()}},5000)}
+function manualPush(){if(!isManager())return;schedulePush();syncStatus='syncing';updateSyncIcon();setTimeout(function(){if(syncStatus==='syncing'){syncStatus='ok';updateSyncIcon()}},5000)}
+function manualPull(){syncStatus='syncing';updateSyncIcon();pullFromGist().then(function(){syncStatus='ok';updateSyncIcon()})}
+function showSyncModal(){
+  if(!syncRemoteData)return;
+  document.getElementById('syncModalInfo').textContent=tsks.length+'个本地任务 vs '+syncRemoteData.length+'个远端任务';
+  var h='',dif=syncRemoteDiff;
+  if(dif){
+    if(dif['new']&&dif['new'].length){
+      h+='<div style="color:var(--green);font-weight:700;margin-bottom:5px;font-size:.8rem">🟢 新增项目 ('+dif['new'].length+')</div>';
+      dif['new'].forEach(function(t){
+        var subCount=t.sb?t.sb.length:0;
+        h+='<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;margin-bottom:2px;background:#0f1f10;border-radius:4px;border-left:3px solid var(--green)">'+
+          '<span style="color:var(--green);font-weight:700;font-size:.7rem">+</span>'+
+          '<span style="flex:1;font-size:.72rem;color:#ccc">'+esh(t.nm||'无名称')+'</span>'+
+          (subCount?'<span style="font-size:.6rem;color:#888">'+subCount+'项子任务</span>':'')+'</div>'
+      })}
+    if(dif.modified&&dif.modified.length){
+      h+='<div style="color:var(--yellow);font-weight:700;margin-top:8px;margin-bottom:5px;font-size:.8rem">🟡 修改的项目 ('+dif.modified.length+')</div>';
+      dif.modified.forEach(function(m){
+        var dtl='';
+        if(m.addedSubs.length) dtl+='<div style="color:var(--green);font-size:.63rem;padding-left:16px">  ➕ 新增子任务: <strong>'+esh(m.addedSubs.join('、'))+'</strong></div>';
+        if(m.removedSubs.length) dtl+='<div style="color:var(--red);font-size:.63rem;padding-left:16px">  ➖ 移除子任务: <strong>'+esh(m.removedSubs.join('、'))+'</strong></div>';
+        if(m.modifiedSubs.length){
+          dtl+='<div style="color:var(--blue);font-size:.63rem;padding-left:16px">  ✏️ 修改子任务:';
+          m.modifiedSubs.forEach(function(x){dtl+=' <span style="color:#aaa">'+esh(x.old)+(x.old!==x.new?' → '+esh(x.new):'')+'</span>'});
+          dtl+='</div>'}
+        h+='<div style="padding:4px 8px;margin-bottom:2px;background:#1f1a0a;border-radius:4px;border-left:3px solid var(--yellow)">'+
+          '<div style="display:flex;gap:6px;align-items:flex-start"><span style="color:var(--yellow);font-weight:700;font-size:.7rem;flex-shrink:0">✎</span>'+
+          '<div style="flex:1;min-width:0"><div style="font-size:.72rem;color:#ccc">'+esh(m.remote.nm||'无名称')+'</div>'+
+          '<div style="font-size:.6rem;color:#888;margin-top:1px">'+m.changes.join(' · ')+'</div>'+dtl+'</div></div></div>'
+      })}
+    if(dif.removed&&dif.removed.length){
+      h+='<div style="color:var(--red);font-weight:700;margin-top:8px;margin-bottom:5px;font-size:.8rem">🔴 移除的项目 ('+dif.removed.length+')</div>';
+      dif.removed.forEach(function(t){
+        var subCount=t.sb?t.sb.length:0;
+        h+='<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;margin-bottom:2px;background:#1f0f0f;border-radius:4px;border-left:3px solid var(--red)">'+
+          '<span style="color:var(--red);font-weight:700;font-size:.7rem">−</span>'+
+          '<span style="flex:1;font-size:.72rem;color:#888;text-decoration:line-through">'+esh(t.nm||'无名称')+'</span>'+
+          (subCount?'<span style="font-size:.6rem;color:#666">'+subCount+'项子任务</span>':'')+'</div>'
+      })}
+  }
+  if(!h)h='<div style="color:#666;text-align:center;padding:20px">没有可显示的差异</div>';
+  document.getElementById('syncModalContent').innerHTML=h;
+  document.getElementById('syncModal').style.display='flex'
+}
+function hideSyncBar(){document.getElementById('syncBar').style.display='none';syncRemoteData=null;syncRemoteDiff=null}
 function startAutoSync(){if(syncTimer)return;setTimeout(pullFromGist,500);syncTimer=setInterval(pullFromGist,300000)}
 function updateSyncIcon(){
   var el=document.getElementById('syncIcon');if(!el)return;
@@ -1604,7 +1781,10 @@ function updateSyncIcon(){
 }
 // =====
 
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){cls();closeTeamMgmt();closeSettings()}});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){cls();closeTeamMgmt();closeSettings();hideSyncBar()}
+  if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();manualPush()}
+});
 ['md','tm','st'].forEach(id=>{document.getElementById(id).addEventListener('click',function(e){if(e.target===this){if(id==='md')cls();else if(id==='tm')closeTeamMgmt();else closeSettings()}})});
 
 function handleDropFiles(files){
