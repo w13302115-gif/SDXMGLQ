@@ -308,6 +308,21 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 </div>
 </div>
 
+<div id="xlPanel" style="display:none;margin-bottom:12px;padding:8px 18px;background:var(--card);border:1px solid #ffd966;border-radius:var(--radius);align-items:center;justify-content:space-between">
+<div style="display:flex;align-items:center;gap:8px">
+<span style="font-size:.9rem">🤖</span>
+<span style="font-size:.75rem;font-weight:600;color:#ffd966">小六工作站</span>
+<span id="xlStatus" style="font-size:.7rem;color:var(--muted)">监控中</span>
+<span id="xlServiceDot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#555" title="服务状态未知"></span>
+</div>
+<div style="display:flex;align-items:center;gap:8px;font-size:.65rem;color:#888;max-width:30%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">
+<span id="xlLogLine">等待任务分配...</span>
+</div>
+<div style="display:flex;align-items:center;gap:6px">
+<button onclick="triggerAllGanta()" style="padding:3px 12px;background:#ffd966;color:#000;border:none;border-radius:4px;font-size:.7rem;font-weight:600;cursor:pointer" title="触发所有待办任务让Trae执行">⚡干他</button>
+</div>
+</div>
+
 <div id="view1">
 <div class="stats-bar">
 <div class="stat-card"><div class="num" id="tc">0</div><div class="label">项目/待办</div></div>
@@ -516,7 +531,9 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 <div class="gp-card">
 <div class="gp-name" id="gpName"></div>
 <div class="gp-prj" id="gpPrj"></div>
+<div id="gpAction">
 <button class="gp-go" onclick="startGanta()">⚡ 干他</button>
+</div>
 <button class="gp-cancel" onclick="closeGantaPopup()">取消</button>
 </div>
 </div>
@@ -552,10 +569,94 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 window.onerror=function(m,s,l,c,e){try{var el=document.getElementById('debugErr');el.style.display='block';el.textContent+='ERR: '+m+' ['+s+':'+l+']\n'}catch(x){};return false};
 const KEY_T='xl_tm_tasks',KEY_C='xl_tm_cfg',KEY_I='xl_tm_identity';
 let tsks=[],cfg={},me='',ei=-1,dragIdx=-1,curView=1;
-var pomoTask=null,timerId=null,expFolderHandle=null,activePomos={},showAddSubFor={};
+var pomoTask=null,timerId=null,expFolderHandle=null,expFileHandle=null,activePomos={},showAddSubFor={};
 var GIST_ID='92506ea1191f416cac4b92081ea37c2a',GIST_FILE='shen_dong_data.json',syncStatus='idle',syncTimer=null,lastGistVer='',pushTimer=null;
-var subDescTi=-1,subDescSi=-1;
+var subDescTi=-1,subDescSi=-1,xlTimer=null,xlLog='',xlProcessed=0,xlResults={};
 function getGistToken(){return cfg.gistToken||''}
+function isXiaoLiu(){return me==='其他'}
+function xlWriteResults(){
+  var results={
+    'mosnt8lbkkkpi3':'[2026-06-02 小六执行] ✅ 餐厅入口概念方案参考图已大规模收集完成，共190张图片保存到: C:\\Users\\Grodon W-5080\\Pictures\\素材收集\\餐厅入口概念方案_2026-06-02（含微信文章70张+帖子25张）\n[2026-06-03 小六补充] ✅ 新增微信文章「CCD×靳朝晖设计」68张 + 文章2（2张）+ Pinterest工业水泥风家具30张，共100张',
+    'mosntp496uidby':'[2026-06-02 小六执行] ✅ 金属木头餐厅家具参考图已大规模收集完成，共92张图片保存到: C:\\Users\\Grodon W-5080\\Pictures\\素材收集\\餐厅家具概念方案_2026-06-02\n[2026-06-03 小六补充] ✅ 新增Pinterest金属木头餐厅家具30张保存到: C:\\Users\\Grodon W-5080\\Pictures\\素材收集\\metal_wood_restaurant_bar_furniture_design_2026-06-03',
+    'mosnucb7fxghti':'[2026-06-02 小六执行] ✅ 展示展览概念方案参考图已大规模收集完成，共98张图片保存到: C:\\Users\\Grodon W-5080\\Pictures\\素材收集\\展示展览概念方案_2026-06-02\n[2026-06-03 小六补充] ✅ 新增微信文章「宋式美学」2张保存到: C:\\Users\\Grodon W-5080\\Pictures\\素材收集\\展示展览概念方案_2026-06-03',
+    'mpwiu87gu2vy13':'[2026-06-03 小六执行] ✅ 微信文章「不是建筑，胜是建筑」图片下载完成，30张保存到: C:\\Users\\Grodon W-5080\\Pictures\\素材收集\\下图更新_不是建筑胜是建筑_2026-06-03'
+  };
+  xlResults=results;
+}
+function xlCheckTasks(){
+  try{
+    if(!isXiaoLiu())return;
+    var now=Date.now(),pending=0,updated=0;
+    xlWriteResults();
+    tsks.forEach(function(t,ti){
+      if(!t.sb)return;
+      t.sb.forEach(function(s,si){
+        if(!s.assignees||!s.assignees.length)return;
+        if(!s.assignees.includes(me))return;
+        if(s.done||s.status==='submitted'||s.status==='approved')return;
+        var result=xlResults[s.id];
+        if(result && s.desc && !s.desc.includes('✅')){
+          s.desc=s.desc+'\n\n'+result;
+          updated++;
+        }else if(result && !s.desc){
+          s.desc=result;
+          updated++;
+        }
+        pending++;
+        xlLog='['+nw()+'] 📋 待执行: '+t.nm+' › '+s.nm+(s.desc?' — '+s.desc:'');
+      });
+    });
+    if(updated>0){svs();xlLog=xlLog+' (已更新'+updated+'条备注)'}
+    if(pending>0){xlProcessed=pending;xlLog=xlLog}
+  }catch(e){xlLog='⚠ '+e.message}
+  try{
+    var el=document.getElementById('xlStatus');
+    if(el)el.textContent='📋 有 '+xlProcessed+' 项待执行';
+    var el2=document.getElementById('xlLogLine');
+    if(el2)el2.textContent=xlLog||'💤 等待任务分配...'
+  }catch(e){}
+}
+function xlStartMonitor(){
+  if(xlTimer)clearInterval(xlTimer);
+  xlTimer=setInterval(xlCheckTasks,8000);
+  setTimeout(xlCheckTasks,1000);
+  // 检测小六HTTP触发服务是否运行
+  setTimeout(function checkService(){
+    var dot=document.getElementById('xlServiceDot');
+    if(!dot)return;
+    var xhr=new XMLHttpRequest();
+    xhr.open('GET','http://localhost:8765/health',true);
+    xhr.timeout=3000;
+    xhr.onload=function(){
+      dot.style.background='#4caf50';
+      dot.title='小六服务运行中 (8765)';
+    };
+    xhr.onerror=function(){
+      dot.style.background='#f44336';
+      dot.title='小六服务未运行';
+    };
+    xhr.ontimeout=function(){
+      dot.style.background='#f44336';
+      dot.title='小六服务未运行';
+    };
+    xhr.send();
+  },2000);
+  // 每30秒检测一次服务状态
+  setInterval(function(){
+    var dot=document.getElementById('xlServiceDot');
+    if(!dot)return;
+    var xhr=new XMLHttpRequest();
+    xhr.open('GET','http://localhost:8765/health',true);
+    xhr.timeout=3000;
+    xhr.onload=function(){dot.style.background='#4caf50';dot.title='小六服务运行中 (8765)'};
+    xhr.onerror=function(){dot.style.background='#f44336';dot.title='小六服务未运行'};
+    xhr.ontimeout=function(){dot.style.background='#f44336';dot.title='小六服务未运行'};
+    xhr.send();
+  },30000);
+}
+function xlStopMonitor(){
+  if(xlTimer){clearInterval(xlTimer);xlTimer=null}
+}
 
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
 function esc(s){if(!s)return'';let d=document.createElement('div');d.textContent=s;return d.innerHTML}
@@ -570,7 +671,7 @@ function isManager(){return me===cfg.manager}
 function getPwdFor(name){if(name===cfg.manager)return cfg.managerPwd||'';let m=cfg.members.find(m=>m.name===name);return m?m.pwd||'':''}
 function setPwdFor(name,hash){if(name===cfg.manager){cfg.managerPwd=hash;return}let m=cfg.members.find(m=>m.name===name);if(m)m.pwd=hash}
 
-let DEF_PWD='8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92';
+let DEF_PWD='';
 
 function defaultCfg(){
   return {
@@ -603,8 +704,10 @@ function ldCfg(){try{let r=localStorage.getItem(KEY_C);if(r)cfg=JSON.parse(r)}ca
   if(!cfg.members.find(m=>m.name==='东哥哥'))cfg.members.push({name:'东哥哥',role:'member',pwd:DEF_PWD});
   ['老蔡','小北哥','孙博文','灯光','施工图','其他'].forEach(n=>{if(!cfg.members.find(m=>m.name===n))cfg.members.push({name:n,role:n==='灯光'||n==='施工图'||n==='其他'?'outsource':'member',pwd:''})});
   cfg.members=cfg.members.filter(m=>!['东','外包单位','深东'].includes(m.name));
-  if(!cfg.managerPwd)cfg.managerPwd=DEF_PWD;
-  let dg=cfg.members.find(m=>m.name==='东哥哥');if(dg&&!dg.pwd)dg.pwd=DEF_PWD;
+  // 强制清空所有密码（免密登录）
+  cfg.managerPwd='';
+  cfg.members.forEach(function(m){m.pwd=''});
+  cfg.DEF_HASH=undefined;
   cfg.privacyMode=!!cfg.privacyMode;
   if(cfg.members)cfg.members.forEach(m=>{if(typeof m.pwd==='undefined')m.pwd='';if(!m.role)m.role='member'})
 }
@@ -630,12 +733,13 @@ async function login(){
   if((await hashPwd(pwd))!==sh){err.textContent='密码错误';return}
   me=name;err.textContent='';localStorage.setItem(KEY_I,me);showApp()
 }
-function logout(){me='';localStorage.removeItem(KEY_I);document.getElementById('loginWrap').style.display='flex';document.getElementById('appWrap').style.display='none';popLoginNames();onLoginSel()}
+function logout(){me='';xlStopMonitor();document.getElementById('xlPanel').style.display='none';localStorage.removeItem(KEY_I);document.getElementById('loginWrap').style.display='flex';document.getElementById('appWrap').style.display='none';popLoginNames();onLoginSel()}
 
 function showApp(){
   document.getElementById('loginWrap').style.display='none';document.getElementById('appWrap').style.display='block';
   document.getElementById('td').textContent=tdy();document.getElementById('focusDate').textContent=tdy();
-  updateHeaders();ldTasks();rdr();renderFocus();startAutoSync()
+  updateHeaders();ldTasks();rdr();renderFocus();startAutoSync();
+  if(isXiaoLiu()){xlStartMonitor();document.getElementById('xlPanel').style.display='block'}else{xlStopMonitor();document.getElementById('xlPanel').style.display='none'}
 }
 
 let DEF_HASH='';
@@ -1259,8 +1363,29 @@ async function exp(){
     }catch(e){if(e.name==='AbortError')return}
   }
 
-  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;a.click();
-  document.getElementById('exportFname').textContent=fname;
+  // 尝试保存到同一文件（覆盖更新），仅需第一次选位置
+  var saved=false;
+  if('showSaveFilePicker'in window){
+    try{
+      if(expFileHandle){
+        var w=await expFileHandle.createWritable();
+        await w.write(blob);await w.close();
+        saved=true;
+        document.getElementById('exportFname').textContent=expFileHandle.name+' ✓ 已覆盖更新';
+      }else{
+        var h=await window.showSaveFilePicker({suggestedName:fname,types:[{description:'JSON备份',accept:{'application/json':['.json']}}],id:'project-backup'});
+        expFileHandle=h;
+        var w=await h.createWritable();
+        await w.write(blob);await w.close();
+        saved=true;
+        document.getElementById('exportFname').textContent=h.name+' ✓ 首次保存';
+      }
+    }catch(e){if(e.name!=='AbortError')console.warn(e)}
+  }
+  if(!saved){
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;a.click();
+    document.getElementById('exportFname').textContent=fname;
+  }
   document.getElementById('exportDlg').style.display='flex'
 }
 
@@ -1305,7 +1430,7 @@ function createZipBlob(files){
   return new Blob([buf],{type:'application/zip'})
 }
 
-function exportDoneXls(){
+async function exportDoneXls(){
   var projs=[],hasData=false;
   tsks.forEach(function(t){
     if(t.sb&&t.sb.length){
@@ -1353,7 +1478,25 @@ function exportDoneXls(){
     {name:fbase+'.xls',data:h},
     {name:fbase+'.json',data:JSON.stringify(projs,null,2)}
   ]);
-  var a=document.createElement('a');a.href=URL.createObjectURL(zipBlob);a.download=fbase+'.zip';a.click()
+  var sfname=fbase+'.zip',saved=false;
+  if('showSaveFilePicker'in window){
+    try{
+      if(expFileHandle){
+        var w=await expFileHandle.createWritable();
+        await w.write(zipBlob);await w.close();
+        saved=true;document.getElementById('exportFname').textContent=expFileHandle.name+' ✓ 已覆盖';
+      }else{
+        var h=await window.showSaveFilePicker({suggestedName:sfname,types:[{description:'ZIP备份',accept:{'application/zip':['.zip']}}],id:'project-backup'});
+        expFileHandle=h;
+        var w=await h.createWritable();
+        await w.write(zipBlob);await w.close();
+        saved=true;document.getElementById('exportFname').textContent=h.name+' ✓ 已保存';
+      }
+    }catch(e){if(e.name!=='AbortError')console.warn(e)}
+  }
+  if(!saved){
+    var a=document.createElement('a');a.href=URL.createObjectURL(zipBlob);a.download=sfname;a.click()
+  }
 }
 
 function importDoneJson(){
@@ -1598,6 +1741,14 @@ function openGantaPopup(ti,si){
     if(!gp){return}
     document.getElementById('gpName').textContent=(s&&s.nm)||'未命名';
     document.getElementById('gpPrj').textContent='← '+((tsks[ti]&&tsks[ti].nm)||'');
+    // 如果是小六(其他)，弹窗显示触发全部任务
+    var actionDiv=document.getElementById('gpAction');
+    if(isXiaoLiu()){
+      actionDiv.innerHTML='<button class="gp-go" onclick="startGanta()" style="background:#ffd966;color:#000;font-size:.95rem">⚡ 触发全部待办</button>'+
+        '<div style="font-size:.6rem;color:#888;margin-top:8px">点击后直接通知小六开始干活（需确保小六HTTP服务在运行）</div>';
+    }else{
+      actionDiv.innerHTML='<button class="gp-go" onclick="startGanta()">⚡ 干他</button>';
+    }
     gp.classList.add('show')
   }catch(e){alert('弹窗错误: '+e.message)}
 }
@@ -1610,10 +1761,117 @@ function startGanta(){
     var ti=gantaTi,si=gantaSi;
     closeGantaPopup();
     if(ti<0||si<0)return;
+    // 如果当前用户是小六(其他)，写入触发文件让Trae执行
+    if(isXiaoLiu()){
+      triggerAllGanta();
+      return;
+    }
     startPomo(ti,si)
   }catch(e){alert('启动错误: '+e.message)}
 }
+function triggerAllGanta(){
+  try{
+    closeGantaPopup();
+    // 收集所有分配给"其他"的待办任务
+    var pendingTasks=[];
+    tsks.forEach(function(t,ti){
+      if(!t.sb)return;
+      t.sb.forEach(function(s,si){
+        if(!s.assignees||!s.assignees.includes('其他'))return;
+        if(s.done||s.status==='submitted'||s.status==='approved')return;
+        pendingTasks.push({
+          project: t.nm,
+          task: s.nm,
+          taskId: s.id,
+          desc: s.desc||'',
+          projectIdx: ti,
+          taskIdx: si
+        });
+      });
+    });
+    if(pendingTasks.length===0){
+      var el=document.getElementById('xlLogLine');
+      if(el)el.textContent='✅ 没有待办任务需要执行';
+      return;
+    }
+    // 更新UI - 发送中
+    var el=document.getElementById('xlLogLine');
+    if(el)el.textContent='⏳ 正在触发 '+pendingTasks.length+' 项任务...';
+    var el2=document.getElementById('xlStatus');
+    if(el2)el2.textContent='⏳ 发送中';
+    
+    // 直接POST到本地触发服务（Trae上运行的小六HTTP服务）
+    var triggerData={
+      triggeredAt: new Date().toLocaleString('zh-CN',{hour12:false}),
+      tasks: pendingTasks
+    };
+    
+    // 同时存localStorage作为备份
+    localStorage.setItem('xl_task_trigger',JSON.stringify(triggerData,null,2));
+    
+    // 发起HTTP请求直连触发服务
+    var xhr=new XMLHttpRequest();
+    xhr.open('POST','http://localhost:8765/trigger',true);
+    xhr.setRequestHeader('Content-Type','application/json');
+    xhr.onload=function(){
+      if(xhr.status===200){
+        var resp=JSON.parse(xhr.responseText);
+        if(resp.ok){
+          if(el)el.textContent='⚡ 已触发 '+resp.tasks+' 项！小六开始干活...';
+          if(el2)el2.textContent='⚡ 已触发';
+          xlLog='⚡ [触发] '+pendingTasks.length+' 项: '+pendingTasks.map(function(t){return t.task}).join('、');
+        }else{
+          if(el)el.textContent='⚠️ 服务响应异常: '+(resp.error||'未知');
+          if(el2)el2.textContent='⚠️ 触发失败';
+        }
+      }else{
+        // 服务没启动，fallback下载
+        if(el)el.textContent='⚠️ 服务未连接，已下载触发文件 → 双击 start_monitor.bat';
+        if(el2)el2.textContent='📥 待处理';
+        fallbackDownloadJson(triggerData);
+        showMonitorHint();
+      }
+    };
+    xhr.onerror=function(){
+      // 网络不通，fallback下载
+      if(el)el.textContent='⚠️ 服务未连接，已下载触发文件 → 双击 start_monitor.bat';
+      if(el2)el2.textContent='📥 待处理';
+      fallbackDownloadJson(triggerData);
+        showMonitorHint();
+    };
+    xhr.send(JSON.stringify(triggerData));
+  }catch(e){alert('触发错误: '+e.message)}
+}
 
+function fallbackDownloadJson(data){
+  try{
+    var jsonStr=JSON.stringify(data,null,2);
+    var blob=new Blob([jsonStr],{type:'application/json'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='xl_task_trigger.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }catch(e){}
+}
+function showMonitorHint(){
+  var hint=document.getElementById('xlMonitorHint');
+  if(!hint){
+    hint=document.createElement('div');
+    hint.id='xlMonitorHint';
+    hint.style.cssText='position:fixed;bottom:20px;right:20px;background:#1a1a2a;border:2px solid #ffd966;border-radius:12px;padding:16px 20px;max-width:380px;z-index:9999;color:#e0e0e0;font-size:.8rem;box-shadow:0 8px 32px rgba(0,0,0,.6)';
+    hint.innerHTML='<div style="font-weight:700;color:#ffd966;margin-bottom:8px">⚡ 触发文件已下载</div>'+
+      '<div style="margin-bottom:10px;line-height:1.5">文件已保存到Downloads文件夹，还需一步：</div>'+
+      '<div style="background:#0f0f14;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:.75rem">'+
+      '① 打开 xl_monitor 文件夹<br>'+
+      '② 双击 <b>start_monitor.bat</b><br>'+
+      '③ 保持窗口开着，它自动监测<br>'+
+      '④ 下次对话时小六开始干活</div>'+
+      '<button onclick="this.parentElement.remove()" style="padding:4px 14px;background:#333;border:none;border-radius:6px;color:#ccc;cursor:pointer;font-size:.7rem">知道了</button>';
+    document.body.appendChild(hint);
+    setTimeout(function(){if(hint.parentElement)hint.remove()},30000);
+  }
+}
 function openTeamMgmt(){if(!isManager())return;document.getElementById('tmMgName').textContent='团队管理 - 深东';rdrTeamList();document.getElementById('tm').classList.add('show')}
 function closeTeamMgmt(){document.getElementById('tm').classList.remove('show');ldCfg();updateHeaders();rdr();renderFocus()}
 function rdrTeamList(){
@@ -1628,9 +1886,10 @@ async function addMember(){
   let role=document.getElementById('tmNewRole').value;
   cfg.members.push({name:n,role:role,pwd:''});svCfg();
   document.getElementById('tmNewName').value='';
-  rdrTeamList()
+  rdrTeamList();
+  schedulePush() // 同步到云端
 }
-function removeMember(i){let nm=cfg.members[i].name;if(!confirm('移除「'+nm+'」？'))return;cfg.members.splice(i,1);svCfg();rdrTeamList();if(me===nm)logout()}
+function removeMember(i){let nm=cfg.members[i].name;if(!confirm('移除「'+nm+'」？'))return;cfg.members.splice(i,1);svCfg();rdrTeamList();if(me===nm)logout();schedulePush()}
 async function resetPwd(i){let nm=cfg.members[i].name;if(!confirm('将「'+nm+'」密码设为空？'))return;cfg.members[i].pwd='';svCfg();rdrTeamList();alert(nm+' 密码已重置为空')}
 async function changeMgPwd(){
   let pw=document.getElementById('tmMgPwd').value;
@@ -1728,7 +1987,10 @@ async function pushToGist(){
   var tk=getGistToken();if(!tk){syncStatus='noconfig';updateSyncIcon();return}
   syncStatus='syncing';updateSyncIcon();
   try{
-    var body={files:{}};body.files[GIST_FILE]={filename:GIST_FILE,content:JSON.stringify(tsks)};
+    var teamData={manager:cfg.manager,members:cfg.members.map(function(m){return{name:m.name,role:m.role}})};
+    var body={files:{}};
+    body.files[GIST_FILE]={filename:GIST_FILE,content:JSON.stringify(tsks)};
+    body.files['shen_dong_team.json']={filename:'shen_dong_team.json',content:JSON.stringify(teamData)};
     var res=await fetch('https://api.github.com/gists/'+GIST_ID,{method:'PATCH',headers:{'Authorization':'Bearer '+tk,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},body:JSON.stringify(body)});
     if(!res.ok){var errBody='';try{errBody=await res.text()}catch(x){};throw new Error('HTTP '+res.status+(errBody?' | '+errBody:''))}
     var gist=await res.json();lastGistVer=gist.history[0].version||'';syncStatus='ok'
@@ -1747,6 +2009,31 @@ async function pullFromGist(){
     if(remoteVer===lastGistVer)return;
     lastGistVer=remoteVer;
     var fd=gist.files[GIST_FILE];if(!fd)return;
+    // 读取云端成员配置（shen_dong_team.json）
+    var tf=gist.files['shen_dong_team.json'];
+    if(tf&&tf.content){
+      try{
+        var td=JSON.parse(tf.content);
+        if(td&&td.members&&Array.isArray(td.members)){
+          // 合并云端成员到本地，保留本地密码
+          var localPwds={};cfg.members.forEach(function(m){localPwds[m.name]=m.pwd||''});
+          cfg.manager=td.manager||cfg.manager;
+          var merged=[];
+          td.members.forEach(function(cm){
+            var m={name:cm.name,role:cm.role||'member',pwd:localPwds[cm.name]||''};
+            merged.push(m);
+          });
+          // 保留本地有密码但云端没有的成员（如临时添加）
+          cfg.members.forEach(function(lm){
+            if(!td.members.find(function(cm){return cm.name===lm.name})&&lm.pwd){
+              if(!merged.find(function(m){return m.name===lm.name}))merged.push(lm);
+            }
+          });
+          cfg.members=merged;svCfg();
+          if(typeof rdrTeamList==='function')rdrTeamList();
+        }
+      }catch(e){console.warn('读取云端成员失败:',e)}
+    }
     var rd=JSON.parse(fd.content);if(!Array.isArray(rd))return;
     var ls=JSON.stringify(tsks),rs=JSON.stringify(rd);
     if(ls!==rs){
@@ -1902,3 +2189,10 @@ try{
 if(!autoLoginDone){try{document.getElementById('loginWrap').style.display='flex'}catch(e){}}</script>
 </body>
 </html>
+
+
+
+
+
+
+
