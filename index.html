@@ -196,6 +196,8 @@ body{font-family:'Microsoft YaHei','PingFang SC','Segoe UI',sans-serif;backgroun
 .focus-assign-sel option{background:#1a1a24;color:#ccc}
 .focus-prj-sep{font-size:.58rem;color:#777;padding:6px 0 3px 0;margin-top:6px;border-top:1px solid #222;text-align:left;letter-spacing:1px;cursor:default;user-select:none}
 .focus-prj-sep:first-child{margin-top:0;border-top:none;padding-top:0}
+.focus-card .drag-handle{opacity:0;transition:opacity .2s}
+.focus-card:hover .drag-handle{opacity:1}
 .focus-card.blocked{animation:blkFlash .4s ease}
 @keyframes blkFlash{0%,100%{box-shadow:inset 0 0 0 rgba(248,113,113,0)}50%{box-shadow:inset 0 0 20px rgba(248,113,113,.6);border-color:#f87171}}
 .focus-empty{text-align:center;padding:80px 20px;color:#444;font-size:.82rem;line-height:2}
@@ -1636,7 +1638,8 @@ function renderFocus(){
 function focusCard(item){
   var s=item.s,ti=item.ti,si=item.si,type=item.type,prj=item.prj||'',q=item.q,idx=item.idx;
   var qc=' q'+q,subTag=(type==='submitted'?' focus-submitted':'');
-  return'<div class="focus-card'+qc+subTag+'" data-q="'+q+'" data-idx="'+idx+'" data-ti="'+ti+'" data-si="'+si+'" onclick="event.stopPropagation();openGantaPopup('+ti+','+si+')">'+
+  return'<div class="focus-card'+qc+subTag+'" data-q="'+q+'" data-idx="'+idx+'" data-ti="'+ti+'" data-si="'+si+'" draggable="true" ondragstart="focusDragStart(event,'+q+','+idx+')" ondragover="focusDragOver(event,'+q+','+idx+')" ondragleave="focusDragLeave(event)" ondrop="focusDrop(event,'+q+','+idx+')" ondragend="focusDragEnd(event)" onclick="event.stopPropagation();openGantaPopup('+ti+','+si+')">'+
+    '<span class="drag-handle" style="cursor:grab;color:#555;font-size:.7rem;margin-right:-6px;user-select:none" title="拖拽排序">⠿</span>'+
     '<span class="fn"><div class="focus-name">'+esc(s.nm)+(type==='submitted'?'<span style="color:#fbbf24;font-size:.58rem;margin-left:4px">已提交</span>':'')+(s.desc?'<span style="color:#ffd966;font-size:.7rem;margin-left:4px;cursor:pointer" onclick="event.stopPropagation();openSubDesc('+ti+','+si+')" title="有备注">📝</span>':'')+'</div>'+
     (prj?'<div class="focus-prj">← '+esc(prj)+'</div>':'')+
     (s.et?'<div class="focus-meta">'+esc(s.et)+'</div>':'')+'</span>'+
@@ -1704,19 +1707,24 @@ function reorderFocus(q,idx){
   var card=e2c(q,idx);
   if(!card)return;
   var tgi=parseInt(card.dataset.ti);
-  if(focusDragTi!==tgi){
-    var sc=e2c(focusDragQ,focusDragIdx);
-    if(sc){sc.classList.add('blocked');setTimeout(function(){sc.classList.remove('blocked')},450)}
-    focusDragIdx=-1;focusDragQ=-1;return;
-  }
   var tgsi=parseInt(card.dataset.si);
-  var srcS=tsks[focusDragTi].sb[focusDragSi];
-  var tgtS=tsks[tgi].sb[tgsi];
-  if(!tgtS)return;
-  tsks[focusDragTi].sb.splice(focusDragSi,1);
-  var newIdx=tsks[tgi].sb.indexOf(tgtS);
-  if(newIdx<0)newIdx=tsks[tgi].sb.length;
-  tsks[tgi].sb.splice(newIdx,0,srcS);
+  // 同项目拖拽排序
+  if(focusDragTi===tgi){
+    var srcS=tsks[focusDragTi].sb[focusDragSi];
+    var tgtS=tsks[tgi].sb[tgsi];
+    if(!tgtS||focusDragSi===tgsi)return;
+    tsks[focusDragTi].sb.splice(focusDragSi,1);
+    var newIdx=tsks[tgi].sb.indexOf(tgtS);
+    if(newIdx<0)newIdx=tsks[tgi].sb.length;
+    tsks[tgi].sb.splice(newIdx,0,srcS);
+  }else{
+    // 跨项目移动：把子任务移到目标项目
+    if(!confirm('将子任务「'+(tsks[focusDragTi].sb[focusDragSi].nm||'')+'」移动到项目「'+(tsks[tgi].nm||'')+'」？'))return;
+    var srcS=tsks[focusDragTi].sb.splice(focusDragSi,1)[0];
+    var tgtS=tsks[tgi].sb[tgsi];
+    if(!tgtS){tsks[tgi].sb.push(srcS)}
+    else{var newIdx=tsks[tgi].sb.indexOf(tgtS);tsks[tgi].sb.splice(newIdx,0,srcS)}
+  }
   focusDragIdx=-1;focusDragQ=-1;svs();rdr();renderFocus()
 }
 function e2c(q,idx){return document.querySelector('#fqList'+q+' .focus-card[data-idx="'+idx+'"]')}
