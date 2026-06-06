@@ -1618,6 +1618,17 @@ function renderFocus(){
       }
     })
   });
+  // 按 sortOrder 排序（越大越前），同分按项目名分组
+  for(var q=0;q<4;q++){
+    quadLists[q].sort(function(a,b){
+      var soA=(a.s.sortOrder!=null)?a.s.sortOrder:0;
+      var soB=(b.s.sortOrder!=null)?b.s.sortOrder:0;
+      if(soA!==soB)return soB-soA;
+      var pA=a.prj||'',pB=b.prj||'';
+      if(pA!==pB)return pA<pB?-1:1;
+      return 0
+    })
+  }
   var total=quadLists[0].length+quadLists[1].length+quadLists[2].length+quadLists[3].length;
   if(!total){all.style.display='block';for(var q=0;q<4;q++)document.getElementById('fqList'+q).innerHTML='';return}
   all.style.display='none';
@@ -1704,27 +1715,45 @@ function focusDrop(e,q,idx){
 }
 function reorderFocus(q,idx){
   if(focusDragIdx<0||focusDragTi<0||focusDragSi<0)return;
-  var card=e2c(q,idx);
-  if(!card)return;
-  var tgi=parseInt(card.dataset.ti);
-  var tgsi=parseInt(card.dataset.si);
-  // 同项目拖拽排序
-  if(focusDragTi===tgi){
-    var srcS=tsks[focusDragTi].sb[focusDragSi];
-    var tgtS=tsks[tgi].sb[tgsi];
-    if(!tgtS||focusDragSi===tgsi)return;
-    tsks[focusDragTi].sb.splice(focusDragSi,1);
-    var newIdx=tsks[tgi].sb.indexOf(tgtS);
-    if(newIdx<0)newIdx=tsks[tgi].sb.length;
-    tsks[tgi].sb.splice(newIdx,0,srcS);
-  }else{
-    // 跨项目移动：把子任务移到目标项目
-    if(!confirm('将子任务「'+(tsks[focusDragTi].sb[focusDragSi].nm||'')+'」移动到项目「'+(tsks[tgi].nm||'')+'」？'))return;
-    var srcS=tsks[focusDragTi].sb.splice(focusDragSi,1)[0];
-    var tgtS=tsks[tgi].sb[tgsi];
-    if(!tgtS){tsks[tgi].sb.push(srcS)}
-    else{var newIdx=tsks[tgi].sb.indexOf(tgtS);tsks[tgi].sb.splice(newIdx,0,srcS)}
+  if(focusDragIdx===idx)return;
+  // 收集当前象限所有子任务（按当前排序）
+  var items=[];
+  tsks.forEach(function(t,ti){
+    if(t.sb)t.sb.forEach(function(s,si){
+      if(s.done)return;
+      if(s.quad!==q)return;
+      if(isManager()){
+        if((isInAssignees(s,me)&&s.status!=='submitted')||s.status==='submitted'||(!isInAssignees(s,me)&&s.status!=='submitted'))
+          items.push({ti,si,s})
+      }else{
+        if(isInAssignees(s,me)&&s.status!=='submitted')items.push({ti,si,s})
+      }
+    })
+  });
+  // 按当前 sortOrder 排序（同 renderFocus 逻辑）
+  items.sort(function(a,b){
+    var soA=(a.s.sortOrder!=null)?a.s.sortOrder:0;
+    var soB=(b.s.sortOrder!=null)?b.s.sortOrder:0;
+    if(soA!==soB)return soB-soA;
+    return 0
+  });
+  // 找到源和目标位置
+  var srcPos=-1,tgtPos=idx;
+  for(var i=0;i<items.length;i++){
+    if(items[i].ti===focusDragTi&&items[i].si===focusDragSi){srcPos=i;break}
   }
+  if(srcPos<0)return;
+  // 移动：取出源，插入目标位置
+  var srcItem=items.splice(srcPos,1)[0];
+  if(tgtPos>srcPos)tgtPos--;
+  if(tgtPos<0)tgtPos=0;
+  if(tgtPos>=items.length)items.push(srcItem);
+  else items.splice(tgtPos,0,srcItem);
+  // 重新分配 sortOrder（越大越靠前）
+  var maxSo=items.length;
+  items.forEach(function(item,i){
+    item.s.sortOrder=maxSo-i
+  });
   focusDragIdx=-1;focusDragQ=-1;svs();rdr();renderFocus()
 }
 function e2c(q,idx){return document.querySelector('#fqList'+q+' .focus-card[data-idx="'+idx+'"]')}
